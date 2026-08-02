@@ -12,6 +12,8 @@ const eslintConfig = defineConfig([
     "out/**",
     "build/**",
     "next-env.d.ts",
+    // Runtime scaffolding generado por `supabase start`, no es código fuente.
+    "supabase/.temp/**",
   ]),
 ]);
 
