@@ -7,7 +7,7 @@ export function verifyWebhookSignature(request: {
   xRequestId: string | null;
   dataId: string | null;
 }) {
-  const secret = process.env.MP_WEBHOOK_SECRET;
+  const secret = process.env.MP_WEBHOOK_SECRET?.trim();
   if (!secret) {
     throw new Error("Mercado Pago no configurado: falta la variable de entorno MP_WEBHOOK_SECRET");
   }
