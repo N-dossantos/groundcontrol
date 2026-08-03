@@ -37,15 +37,18 @@ export async function POST(request: Request) {
     body = null;
   }
 
+  const xSignature = request.headers.get("x-signature");
+  const xRequestId = request.headers.get("x-request-id");
+
   try {
-    verifyWebhookSignature({
-      xSignature: request.headers.get("x-signature"),
-      xRequestId: request.headers.get("x-request-id"),
-      dataId,
-    });
+    verifyWebhookSignature({ xSignature, xRequestId, dataId });
   } catch (err) {
     if (err instanceof InvalidWebhookSignatureError) {
-      console.warn("Webhook de Mercado Pago con firma inválida", err.reason);
+      console.warn(
+        "Webhook de Mercado Pago con firma inválida",
+        err.reason,
+        JSON.stringify({ xSignature, xRequestId, dataId, url: request.url })
+      );
       return NextResponse.json({ error: "firma_invalida" }, { status: 401 });
     }
     throw err;
