@@ -233,6 +233,7 @@ create trigger on_auth_user_created
 create function set_updated_at()
 returns trigger
 language plpgsql
+set search_path = public
 as $$
 begin
   new.updated_at = now();
@@ -257,6 +258,7 @@ create sequence order_number_seq start 1;
 create function next_order_number()
 returns text
 language sql
+set search_path = public
 as $$
   select 'GC90-' || lpad(nextval('order_number_seq')::text, 6, '0');
 $$;
@@ -582,16 +584,19 @@ alter default privileges in schema public grant select, insert, update, delete o
 -- que anon/authenticated necesitan poder ejecutarla aunque sea SECURITY DEFINER.
 grant execute on function is_admin() to anon, authenticated;
 
--- Postgres otorga EXECUTE a PUBLIC por defecto en toda función nueva — sin este
--- revoke explícito, anon podría invocar por RPC estas funciones de negocio
--- directamente (ej. crear pedidos "fantasma" para retener stock). Quedan
--- alcanzables SOLO por rutas server con la service_role key.
+-- Postgres otorga EXECUTE a PUBLIC por defecto en toda función nueva, y en
+-- Supabase Cloud el rol de aprovisionamiento además concede EXECUTE directo a
+-- anon/authenticated vía default privileges (revocar solo de PUBLIC no alcanza
+-- para bloquearlos). Sin ambos revokes, anon podría invocar por RPC estas
+-- funciones de negocio directamente (ej. crear pedidos "fantasma" para retener
+-- stock, o cancelar la reserva de cualquier orden por id). Quedan alcanzables
+-- SOLO por rutas server con la service_role key.
 revoke execute on function create_order_and_reserve_stock(
   uuid, text, text, text, jsonb, numeric, jsonb, text
-) from public;
-revoke execute on function release_order_reservation(uuid, text) from public;
-revoke execute on function validate_coupon(text, numeric) from public;
-revoke execute on function next_order_number() from public;
+) from public, anon, authenticated;
+revoke execute on function release_order_reservation(uuid, text) from public, anon, authenticated;
+revoke execute on function validate_coupon(text, numeric) from public, anon, authenticated;
+revoke execute on function next_order_number() from public, anon, authenticated;
 grant execute on function create_order_and_reserve_stock(
   uuid, text, text, text, jsonb, numeric, jsonb, text
 ) to service_role;
