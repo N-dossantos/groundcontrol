@@ -1,8 +1,12 @@
 name: Liberar reservas de stock vencidas
 
 on:
-  schedule:
-    - cron: "*/10 * * * *"
+  # Cron pausado: el sitio todavía no está publicado, así que no hay reservas
+  # de stock reales que liberar y cada corrida fallaba (o pegaba al vacío).
+  # DESCOMENTAR AL LANZAR A PRODUCCIÓN — sin esto, el stock de los checkouts
+  # abandonados queda reservado para siempre.
+  # schedule:
+  #   - cron: "*/10 * * * *"
   workflow_dispatch: {}
 
 jobs:
