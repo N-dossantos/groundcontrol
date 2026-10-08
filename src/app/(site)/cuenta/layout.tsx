@@ -6,6 +6,7 @@ const NAV = [
   { href: "/cuenta/perfil", label: "Perfil" },
   { href: "/cuenta/direcciones", label: "Direcciones" },
   { href: "/cuenta/pedidos", label: "Pedidos" },
+  { href: "/cuenta/favoritos", label: "Favoritos" },
 ];
 
 export default function CuentaLayout({

@@ -3,6 +3,7 @@ import { Suspense } from "react";
 import { getProducts, getClubes, type ProductTipo } from "@/lib/products";
 import { ProductGrid } from "@/components/product/ProductGrid";
 import { ProductFilters } from "@/components/product/ProductFilters";
+import { Pagination } from "@/components/product/Pagination";
 
 export const metadata: Metadata = { title: "Catálogo" };
 
@@ -11,15 +12,19 @@ type SearchParams = {
   club?: string;
   talle?: string;
   q?: string;
+  page?: string;
 };
 
 async function CatalogoResults({ searchParams }: { searchParams: SearchParams }) {
-  const [products, clubes] = await Promise.all([
+  const page = Math.max(1, Number(searchParams.page) || 1);
+
+  const [{ products, total, pageSize }, clubes] = await Promise.all([
     getProducts({
       tipo: (searchParams.tipo as ProductTipo) || undefined,
       club: searchParams.club || undefined,
       talle: searchParams.talle || undefined,
       q: searchParams.q || undefined,
+      page,
     }),
     getClubes(),
   ]);
@@ -28,6 +33,11 @@ async function CatalogoResults({ searchParams }: { searchParams: SearchParams })
     <>
       <ProductFilters clubes={clubes} />
       <ProductGrid products={products} />
+      <Pagination
+        page={page}
+        totalPages={Math.max(1, Math.ceil(total / pageSize))}
+        searchParams={searchParams}
+      />
     </>
   );
 }

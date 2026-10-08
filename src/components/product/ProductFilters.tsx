@@ -24,6 +24,7 @@ export function ProductFilters({ clubes }: { clubes: string[] }) {
     } else {
       params.delete(key);
     }
+    params.delete("page");
     router.push(`${pathname}?${params.toString()}`);
   }
 

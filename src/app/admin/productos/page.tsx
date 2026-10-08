@@ -3,8 +3,11 @@ import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
 import { formatPrice } from "@/lib/utils/format";
 import { Button } from "@/components/ui/Button";
+import { Pagination } from "@/components/product/Pagination";
 
 export const metadata: Metadata = { title: "Admin · Productos" };
+
+const PAGE_SIZE = 50;
 
 const TIPO_LABEL: Record<string, string> = {
   camiseta: "Camiseta",
@@ -12,12 +15,26 @@ const TIPO_LABEL: Record<string, string> = {
   conjunto: "Conjunto",
 };
 
-export default async function AdminProductosPage() {
+export default async function AdminProductosPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ page?: string }>;
+}) {
+  const { page: pageParam } = await searchParams;
+  const page = Math.max(1, Number(pageParam) || 1);
+  const from = (page - 1) * PAGE_SIZE;
+  const to = from + PAGE_SIZE - 1;
+
   const supabase = await createClient();
-  const { data: products } = await supabase
+  const { data: products, count } = await supabase
     .from("products")
-    .select("id, nombre, tipo, club, precio, activo, product_variants(stock)")
-    .order("created_at", { ascending: false });
+    .select("id, nombre, tipo, club, precio, activo, product_variants(stock)", {
+      count: "exact",
+    })
+    .order("created_at", { ascending: false })
+    .range(from, to);
+
+  const totalPages = Math.max(1, Math.ceil((count ?? 0) / PAGE_SIZE));
 
   return (
     <div>
@@ -71,6 +88,8 @@ export default async function AdminProductosPage() {
           </tbody>
         </table>
       </div>
+
+      <Pagination page={page} totalPages={totalPages} searchParams={{ page: pageParam }} />
     </div>
   );
 }

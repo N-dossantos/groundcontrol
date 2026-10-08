@@ -428,6 +428,57 @@ export type Database = {
           },
         ]
       }
+      product_reviews: {
+        Row: {
+          aprobado: boolean
+          calificacion: number
+          comentario: string | null
+          created_at: string
+          id: string
+          nombre_autor: string
+          product_id: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          aprobado?: boolean
+          calificacion: number
+          comentario?: string | null
+          created_at?: string
+          id?: string
+          nombre_autor?: string
+          product_id: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          aprobado?: boolean
+          calificacion?: number
+          comentario?: string | null
+          created_at?: string
+          id?: string
+          nombre_autor?: string
+          product_id?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "product_reviews_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "products"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "product_reviews_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       product_variants: {
         Row: {
           created_at: string
@@ -481,6 +532,7 @@ export type Database = {
           nombre: string
           permite_personalizacion: boolean
           precio: number
+          search_vector: unknown
           slug: string
           temporada: string | null
           tipo: Database["public"]["Enums"]["product_tipo"]
@@ -497,6 +549,7 @@ export type Database = {
           nombre: string
           permite_personalizacion?: boolean
           precio: number
+          search_vector?: unknown
           slug: string
           temporada?: string | null
           tipo: Database["public"]["Enums"]["product_tipo"]
@@ -513,6 +566,7 @@ export type Database = {
           nombre?: string
           permite_personalizacion?: boolean
           precio?: number
+          search_vector?: unknown
           slug?: string
           temporada?: string | null
           tipo?: Database["public"]["Enums"]["product_tipo"]
@@ -567,6 +621,42 @@ export type Database = {
           ventana_inicio?: string
         }
         Relationships: []
+      }
+      wishlists: {
+        Row: {
+          created_at: string
+          id: string
+          product_id: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          product_id: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          product_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "wishlists_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "products"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "wishlists_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
       }
     }
     Views: {

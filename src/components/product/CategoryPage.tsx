@@ -10,7 +10,7 @@ export async function CategoryPage({
   titulo: string;
   descripcion: string;
 }) {
-  const products = await getProducts({ tipo });
+  const { products } = await getProducts({ tipo, pageSize: 100 });
 
   return (
     <div className="mx-auto max-w-6xl px-4 py-12">

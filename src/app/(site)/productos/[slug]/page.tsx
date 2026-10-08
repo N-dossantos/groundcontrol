@@ -1,8 +1,17 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
-import { getAllProductSlugs, getProductBySlug } from "@/lib/products";
+import {
+  getAllProductSlugs,
+  getProductBySlug,
+  getProductReviews,
+  getRelatedProducts,
+  averageRating,
+} from "@/lib/products";
 import { ProductGallery } from "@/components/product/ProductGallery";
 import { AddToCartForm } from "@/components/product/AddToCartForm";
+import { ProductReviews } from "@/components/product/ProductReviews";
+import { ProductGrid } from "@/components/product/ProductGrid";
+import { WishlistButton } from "@/components/wishlist/WishlistButton";
 
 export const revalidate = 300;
 
@@ -48,6 +57,12 @@ export default async function ProductoPage({
 
   if (!product) notFound();
 
+  const [reviews, relatedProducts] = await Promise.all([
+    getProductReviews(product.id),
+    getRelatedProducts(product),
+  ]);
+  const rating = averageRating(product);
+
   return (
     <div className="mx-auto max-w-5xl px-4 py-12">
       <div className="grid gap-10 lg:grid-cols-2">
@@ -59,9 +74,18 @@ export default async function ProductoPage({
             {product.club ? ` · ${product.club}` : ""}
             {product.temporada ? ` · ${product.temporada}` : ""}
           </p>
-          <h1 className="mt-1 font-headline text-3xl font-extrabold uppercase leading-tight">
-            {product.nombre}
-          </h1>
+          <div className="mt-1 flex items-start justify-between gap-3">
+            <h1 className="font-headline text-3xl font-extrabold uppercase leading-tight">
+              {product.nombre}
+            </h1>
+            <WishlistButton productId={product.id} className="shrink-0" />
+          </div>
+          {rating && (
+            <p className="mt-1 text-sm text-gc-dorado">
+              ★ {rating.average.toFixed(1)} · {rating.count}{" "}
+              {rating.count === 1 ? "reseña" : "reseñas"}
+            </p>
+          )}
 
           {product.descripcion && (
             <p className="mt-4 text-sm leading-relaxed text-gc-blanco/70">
@@ -74,6 +98,17 @@ export default async function ProductoPage({
           </div>
         </div>
       </div>
+
+      <ProductReviews productId={product.id} initialReviews={reviews} />
+
+      {relatedProducts.length > 0 && (
+        <section className="mt-12 border-t border-gc-carbon pt-8">
+          <h2 className="mb-6 font-headline text-xl font-extrabold uppercase tracking-wide">
+            También te puede interesar
+          </h2>
+          <ProductGrid products={relatedProducts} />
+        </section>
+      )}
     </div>
   );
 }

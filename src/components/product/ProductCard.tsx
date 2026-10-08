@@ -1,7 +1,9 @@
 import Link from "next/link";
 import Image from "next/image";
+import { Star } from "lucide-react";
 import { formatPrice } from "@/lib/utils/format";
-import { totalStock, isLowStock, type ProductWithRelations } from "@/lib/products";
+import { totalStock, isLowStock, averageRating, type ProductWithRelations } from "@/lib/products";
+import { WishlistButton } from "@/components/wishlist/WishlistButton";
 
 const TIPO_LABEL: Record<string, string> = {
   camiseta: "Camiseta",
@@ -14,6 +16,7 @@ export function ProductCard({ product }: { product: ProductWithRelations }) {
   const agotado = stock === 0;
   const ultimasUnidades = !agotado && product.product_variants.some(isLowStock);
   const image = product.product_images[0];
+  const rating = averageRating(product);
 
   return (
     <Link
@@ -39,11 +42,14 @@ export function ProductCard({ product }: { product: ProductWithRelations }) {
             Últimas unidades
           </span>
         )}
-        {product.permite_personalizacion && !agotado && (
-          <span className="absolute right-2 top-2 rounded-full border border-gc-carbon bg-gc-negro/90 px-2.5 py-0.5 text-[10px] font-extrabold uppercase tracking-wider text-gc-dorado backdrop-blur">
-            Nombre + N°
-          </span>
-        )}
+        <div className="absolute right-2 top-2 flex flex-col items-end gap-1.5">
+          <WishlistButton productId={product.id} />
+          {product.permite_personalizacion && !agotado && (
+            <span className="rounded-full border border-gc-carbon bg-gc-negro/90 px-2.5 py-0.5 text-[10px] font-extrabold uppercase tracking-wider text-gc-dorado backdrop-blur">
+              Nombre + N°
+            </span>
+          )}
+        </div>
       </div>
 
       <div className="p-4">
@@ -57,6 +63,12 @@ export function ProductCard({ product }: { product: ProductWithRelations }) {
         <p className="mt-2 font-stat text-lg font-bold text-gc-blanco">
           {formatPrice(product.precio)}
         </p>
+        {rating && (
+          <p className="mt-1 flex items-center gap-1 text-xs text-gc-blanco/60">
+            <Star size={12} className="fill-gc-dorado text-gc-dorado" />
+            {rating.average.toFixed(1)} ({rating.count})
+          </p>
+        )}
       </div>
     </Link>
   );

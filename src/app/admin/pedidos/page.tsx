@@ -2,8 +2,11 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
 import { formatPrice } from "@/lib/utils/format";
+import { Pagination } from "@/components/product/Pagination";
 
 export const metadata: Metadata = { title: "Admin · Pedidos" };
+
+const PAGE_SIZE = 50;
 
 const ESTADOS = [
   "pendiente_pago",
@@ -28,20 +31,27 @@ const ESTADO_LABEL: Record<string, string> = {
 export default async function AdminPedidosPage({
   searchParams,
 }: {
-  searchParams: Promise<{ estado?: string; q?: string }>;
+  searchParams: Promise<{ estado?: string; q?: string; page?: string }>;
 }) {
-  const { estado, q } = await searchParams;
+  const { estado, q, page: pageParam } = await searchParams;
+  const page = Math.max(1, Number(pageParam) || 1);
+  const from = (page - 1) * PAGE_SIZE;
+  const to = from + PAGE_SIZE - 1;
+
   const supabase = await createClient();
 
   let query = supabase
     .from("orders")
-    .select("id, order_number, estado, total, guest_email, user_id, created_at")
+    .select("id, order_number, estado, total, guest_email, user_id, created_at", {
+      count: "exact",
+    })
     .order("created_at", { ascending: false });
 
   if (estado) query = query.eq("estado", estado);
   if (q) query = query.ilike("order_number", `%${q}%`);
 
-  const { data: orders } = await query.limit(100);
+  const { data: orders, count } = await query.range(from, to);
+  const totalPages = Math.max(1, Math.ceil((count ?? 0) / PAGE_SIZE));
 
   return (
     <div>
@@ -113,6 +123,12 @@ export default async function AdminPedidosPage({
           </tbody>
         </table>
       </div>
+
+      <Pagination
+        page={page}
+        totalPages={totalPages}
+        searchParams={{ estado, q, page: pageParam }}
+      />
     </div>
   );
 }
