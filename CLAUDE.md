@@ -32,7 +32,7 @@ npx supabase gen types typescript --local > src/types/database.types.ts   # afte
 npx supabase stop                        # tear down
 ```
 
-Docker must be running first. `.env.local` must point at the local instance's URL/keys (`supabase start` prints them). The schema — tables, RLS policies, `SECURITY DEFINER` functions — lives entirely in `supabase/migrations/0001_init_schema.sql`; treat it as the single source of truth and edit it in place rather than layering patch migrations, until this project has shipped to a shared/production Supabase project.
+Docker must be running first. `.env.local` must point at the local instance's URL/keys (`supabase start` prints them). The schema — tables, RLS policies, `SECURITY DEFINER` functions — lives in `supabase/migrations/` (`0001_init_schema.sql` plus numbered follow-ups). Production has these applied and tracked by the Supabase CLI, so never edit an applied migration in place: every schema change is a new migration file. Generate types with the same CLI version that produced the committed file (currently `npx supabase@2.115.0`; newer CLIs emit a different, unformatted layout that rewrites the whole file).
 
 There is no test suite in this repo currently.
 
@@ -53,7 +53,7 @@ Four separate client constructors exist under `src/lib/supabase/`, each for a di
 
 RLS design in the migration is deliberately layered:
 1. Table-level RLS policies (customers read/write only their own rows; `is_admin()` — a `SECURITY DEFINER` helper — grants admins broad read/write).
-2. Postgres grants `EXECUTE` to `PUBLIC` on new functions by default, and RLS alone doesn't block a table without an explicit grant — both had to be handled explicitly in the migration (see the `GRANTS` section at the bottom of `0001_init_schema.sql`). If you add a new `SECURITY DEFINER` function that shouldn't be client-callable, you must `revoke ... from public` explicitly.
+2. Postgres grants `EXECUTE` to `PUBLIC` on new functions by default, and RLS alone doesn't block a table without an explicit grant — both had to be handled explicitly in the migration (see the `GRANTS` section at the bottom of `0001_init_schema.sql`). If you add a new `SECURITY DEFINER` function that shouldn't be client-callable, you must `revoke ... from public, anon, authenticated` explicitly (Supabase Cloud also grants `EXECUTE` directly to `anon`/`authenticated`, so revoking from `public` alone isn't enough).
 3. Business-mutation RPCs (`create_order_and_reserve_stock`, `release_order_reservation`, `validate_coupon`) are revoked from `anon`/`authenticated` entirely — only the service-role admin client can call them, from trusted API routes. This is intentional defense-in-depth, not an oversight: it forces every order/coupon mutation through our own validated route handlers.
 
 ### Order lifecycle & stock reservation
