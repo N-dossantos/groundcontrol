@@ -1,12 +1,27 @@
+import { PackageSearch } from "lucide-react";
 import { ProductCard } from "./ProductCard";
+import { EmptyState } from "@/components/ui/EmptyState";
 import type { ProductWithRelations } from "@/lib/products";
 
-export function ProductGrid({ products }: { products: ProductWithRelations[] }) {
+export function ProductGrid({
+  products,
+  emptyTitle = "Sin resultados",
+  emptyDescription = "No encontramos productos con esos filtros.",
+  emptyAction,
+}: {
+  products: ProductWithRelations[];
+  emptyTitle?: string;
+  emptyDescription?: string;
+  emptyAction?: React.ReactNode;
+}) {
   if (products.length === 0) {
     return (
-      <p className="py-16 text-center text-sm text-gc-blanco/60">
-        No encontramos productos con esos filtros.
-      </p>
+      <EmptyState
+        icon={PackageSearch}
+        title={emptyTitle}
+        description={emptyDescription}
+        action={emptyAction}
+      />
     );
   }
 

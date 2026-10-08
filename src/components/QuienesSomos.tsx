@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { MapPin, Truck, Shirt, Users, Heart, Sparkles } from "lucide-react";
+import { MapPin, Truck, Shirt, Users, Sparkles } from "lucide-react";
 
 export function QuienesSomos() {
   return (

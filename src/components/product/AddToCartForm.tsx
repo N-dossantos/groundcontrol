@@ -1,7 +1,6 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import Link from "next/link";
 import { Ruler, MessageCircle, ShoppingBag, Sparkles } from "lucide-react";
 import { useCartStore } from "@/lib/cart/store";
 import { Button } from "@/components/ui/Button";

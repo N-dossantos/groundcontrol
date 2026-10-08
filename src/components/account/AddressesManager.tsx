@@ -4,10 +4,13 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
+import { MapPin } from "lucide-react";
 import { addressSchema, type AddressInput } from "@/lib/validations/checkout";
 import { createClient } from "@/lib/supabase/client";
 import { Button } from "@/components/ui/Button";
 import { Input, Label, FieldError } from "@/components/ui/Input";
+import { EmptyState } from "@/components/ui/EmptyState";
+import { Badge } from "@/components/ui/Badge";
 import type { Database } from "@/types/database.types";
 
 type Address = Database["public"]["Tables"]["addresses"]["Row"];
@@ -48,8 +51,12 @@ export function AddressesManager({
 
   return (
     <div className="max-w-xl space-y-4">
-      {addresses.length === 0 && (
-        <p className="text-sm text-gc-blanco/60">No tenés direcciones guardadas.</p>
+      {addresses.length === 0 && !showForm && (
+        <EmptyState
+          icon={MapPin}
+          title="Sin direcciones guardadas"
+          description="Agregá una dirección para agilizar tus próximos envíos."
+        />
       )}
 
       {addresses.map((address) => (
@@ -67,9 +74,9 @@ export function AddressesManager({
                 {address.ciudad}, {address.provincia} ({address.codigo_postal})
               </p>
               {address.es_predeterminada && (
-                <span className="mt-1 inline-block rounded bg-gc-dorado px-2 py-0.5 text-xs font-bold text-gc-negro">
+                <Badge variant="dorado" className="mt-1.5">
                   Predeterminada
-                </span>
+                </Badge>
               )}
             </div>
             <div className="flex shrink-0 flex-col items-end gap-1 text-xs">

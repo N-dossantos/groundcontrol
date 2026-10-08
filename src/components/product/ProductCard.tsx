@@ -4,6 +4,7 @@ import { Star } from "lucide-react";
 import { formatPrice } from "@/lib/utils/format";
 import { totalStock, isLowStock, averageRating, type ProductWithRelations } from "@/lib/products";
 import { WishlistButton } from "@/components/wishlist/WishlistButton";
+import { Badge } from "@/components/ui/Badge";
 
 const TIPO_LABEL: Record<string, string> = {
   camiseta: "Camiseta",
@@ -33,21 +34,21 @@ export function ProductCard({ product }: { product: ProductWithRelations }) {
         />
 
         {agotado && (
-          <span className="absolute left-2 top-2 rounded bg-gc-negro/90 px-2 py-1 text-xs font-bold uppercase tracking-wide text-gc-blanco/70">
+          <Badge variant="neutral" className="absolute left-2 top-2">
             Agotado
-          </span>
+          </Badge>
         )}
         {ultimasUnidades && (
-          <span className="absolute left-2 top-2 rounded bg-gc-dorado px-2 py-1 text-xs font-bold uppercase tracking-wide text-gc-negro">
+          <Badge variant="dorado" className="absolute left-2 top-2">
             Últimas unidades
-          </span>
+          </Badge>
         )}
         <div className="absolute right-2 top-2 flex flex-col items-end gap-1.5">
           <WishlistButton productId={product.id} />
           {product.permite_personalizacion && !agotado && (
-            <span className="rounded-full border border-gc-carbon bg-gc-negro/90 px-2.5 py-0.5 text-[10px] font-extrabold uppercase tracking-wider text-gc-dorado backdrop-blur">
+            <Badge variant="outline" className="rounded-full px-2.5 py-0.5 text-[10px] tracking-wider">
               Nombre + N°
-            </span>
+            </Badge>
           )}
         </div>
       </div>

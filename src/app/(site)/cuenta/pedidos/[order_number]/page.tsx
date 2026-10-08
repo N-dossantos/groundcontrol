@@ -2,18 +2,10 @@ import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { OrderSummaryCard } from "@/components/checkout/OrderSummaryCard";
+import { orderStatusLabel, orderStatusBadgeVariant } from "@/lib/utils/orderStatus";
+import { Badge } from "@/components/ui/Badge";
 
 export const metadata: Metadata = { title: "Detalle de pedido" };
-
-const ESTADO_LABEL: Record<string, string> = {
-  pendiente_pago: "Pendiente de pago",
-  pagado: "Pagado",
-  en_preparacion: "En preparación",
-  enviado: "Enviado",
-  entregado: "Entregado",
-  cancelado: "Cancelado",
-  reembolsado: "Reembolsado",
-};
 
 export default async function PedidoDetallePage({
   params,
@@ -34,9 +26,9 @@ export default async function PedidoDetallePage({
 
   return (
     <div>
-      <p className="mb-4 text-sm font-bold uppercase tracking-wide text-gc-dorado">
-        {ESTADO_LABEL[order.estado] ?? order.estado}
-      </p>
+      <Badge variant={orderStatusBadgeVariant(order.estado)} className="mb-4">
+        {orderStatusLabel(order.estado)}
+      </Badge>
       <OrderSummaryCard order={order} />
     </div>
   );

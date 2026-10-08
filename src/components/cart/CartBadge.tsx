@@ -1,6 +1,5 @@
 "use client";
 
-import Link from "next/link";
 import { ShoppingBag } from "lucide-react";
 import { useCartStore, cartItemCount } from "@/lib/cart/store";
 import { useHydrated } from "@/lib/hooks/useHydrated";

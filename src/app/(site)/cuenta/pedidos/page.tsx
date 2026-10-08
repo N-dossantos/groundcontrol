@@ -1,19 +1,13 @@
 import type { Metadata } from "next";
 import Link from "next/link";
+import { PackageSearch } from "lucide-react";
 import { createClient } from "@/lib/supabase/server";
 import { formatPrice } from "@/lib/utils/format";
+import { orderStatusLabel, orderStatusBadgeVariant } from "@/lib/utils/orderStatus";
+import { Badge } from "@/components/ui/Badge";
+import { EmptyState } from "@/components/ui/EmptyState";
 
 export const metadata: Metadata = { title: "Mis pedidos" };
-
-const ESTADO_LABEL: Record<string, string> = {
-  pendiente_pago: "Pendiente de pago",
-  pagado: "Pagado",
-  en_preparacion: "En preparación",
-  enviado: "Enviado",
-  entregado: "Entregado",
-  cancelado: "Cancelado",
-  reembolsado: "Reembolsado",
-};
 
 export default async function PedidosPage() {
   const supabase = await createClient();
@@ -28,7 +22,13 @@ export default async function PedidosPage() {
     .order("created_at", { ascending: false });
 
   if (!orders || orders.length === 0) {
-    return <p className="text-sm text-gc-blanco/60">Todavía no hiciste ningún pedido.</p>;
+    return (
+      <EmptyState
+        icon={PackageSearch}
+        title="Sin pedidos todavía"
+        description="Cuando hagas tu primera compra, la vas a poder seguir acá."
+      />
+    );
   }
 
   return (
@@ -41,10 +41,12 @@ export default async function PedidosPage() {
         >
           <div>
             <p className="font-bold">{order.order_number}</p>
-            <p className="text-xs text-gc-blanco/60">
-              {new Date(order.created_at).toLocaleDateString("es-AR")} ·{" "}
-              {ESTADO_LABEL[order.estado] ?? order.estado}
+            <p className="mt-1 text-xs text-gc-blanco/60">
+              {new Date(order.created_at).toLocaleDateString("es-AR")}
             </p>
+            <Badge variant={orderStatusBadgeVariant(order.estado)} className="mt-1.5">
+              {orderStatusLabel(order.estado)}
+            </Badge>
           </div>
           <p className="font-stat font-bold">{formatPrice(order.total)}</p>
         </Link>

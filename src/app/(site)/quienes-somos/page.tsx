@@ -1,10 +1,10 @@
-import Metadata from "next";
+import type { Metadata } from "next";
 import Link from "next/link";
 import { QuienesSomos } from "@/components/QuienesSomos";
-import { CheckCircle2, ShieldCheck, Truck, MessageCircle, Heart, ArrowRight } from "lucide-react";
+import { ShieldCheck, Truck, MessageCircle, ArrowRight } from "lucide-react";
 
-export const metadata = {
-  title: "Quiénes Somos | Ground Control 90",
+export const metadata: Metadata = {
+  title: "Quiénes Somos",
   description: "Conocé la historia de Ground Control 90, indumentaria deportiva y camisetas de fútbol personalizadas en Canning, Buenos Aires.",
 };
 

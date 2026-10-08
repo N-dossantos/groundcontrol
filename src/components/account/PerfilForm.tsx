@@ -7,6 +7,7 @@ import { perfilSchema, type PerfilInput } from "@/lib/validations/auth";
 import { createClient } from "@/lib/supabase/client";
 import { Button } from "@/components/ui/Button";
 import { Input, Label, FieldError } from "@/components/ui/Input";
+import { Alert } from "@/components/ui/Alert";
 
 export function PerfilForm({
   userId,
@@ -61,8 +62,8 @@ export function PerfilForm({
         <Label htmlFor="telefono">Teléfono</Label>
         <Input id="telefono" {...register("telefono")} />
       </div>
-      {formError && <p className="text-sm text-red-400">{formError}</p>}
-      {guardado && <p className="text-sm text-gc-dorado">► Cambios guardados</p>}
+      {formError && <Alert variant="error">{formError}</Alert>}
+      {guardado && <Alert variant="success">Cambios guardados.</Alert>}
       <Button type="submit" isLoading={isSubmitting}>
         Guardar cambios
       </Button>

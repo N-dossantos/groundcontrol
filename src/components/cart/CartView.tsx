@@ -3,11 +3,13 @@
 import { useEffect } from "react";
 import Link from "next/link";
 import Image from "next/image";
-import { Trash2 } from "lucide-react";
+import { ShoppingCart, Trash2 } from "lucide-react";
 import { useCartStore, cartSubtotal } from "@/lib/cart/store";
 import { recoverCartFromServer } from "@/lib/cart/recoverFromServer";
 import { formatPrice } from "@/lib/utils/format";
 import { Button } from "@/components/ui/Button";
+import { Skeleton } from "@/components/ui/Skeleton";
+import { EmptyState } from "@/components/ui/EmptyState";
 import { useHydrated } from "@/lib/hooks/useHydrated";
 
 const TIPO_LABEL: Record<string, string> = {
@@ -31,17 +33,44 @@ export function CartView() {
     });
   }, [mounted, items.length]);
 
-  if (!mounted) return null;
+  if (!mounted) {
+    return (
+      <div className="mx-auto max-w-4xl px-4 py-12">
+        <Skeleton className="mb-8 h-8 w-40" />
+        <div className="space-y-4">
+          {[0, 1].map((i) => (
+            <div key={i} className="flex gap-4 rounded-lg border border-gc-carbon bg-gc-carbon/20 p-4">
+              <Skeleton className="h-24 w-24 shrink-0 rounded-md" />
+              <div className="flex flex-1 flex-col justify-between gap-2">
+                <div className="space-y-2">
+                  <Skeleton className="h-3 w-24" />
+                  <Skeleton className="h-4 w-40" />
+                </div>
+                <div className="flex items-center justify-between">
+                  <Skeleton className="h-8 w-16" />
+                  <Skeleton className="h-5 w-20" />
+                </div>
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+    );
+  }
 
   if (items.length === 0) {
     return (
-      <div className="mx-auto max-w-2xl px-4 py-24 text-center">
-        <h1 className="font-headline text-2xl font-extrabold uppercase tracking-wide">
-          Tu carrito está vacío
-        </h1>
-        <Link href="/catalogo">
-          <Button className="mt-6">Ver catálogo</Button>
-        </Link>
+      <div className="mx-auto max-w-2xl px-4 py-12">
+        <EmptyState
+          icon={ShoppingCart}
+          title="Tu carrito está vacío"
+          description="Todavía no agregaste productos. Explorá el catálogo y encontrá tu próxima camiseta."
+          action={
+            <Link href="/catalogo">
+              <Button>Ver catálogo</Button>
+            </Link>
+          }
+        />
       </div>
     );
   }

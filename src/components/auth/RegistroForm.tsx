@@ -10,6 +10,7 @@ import { createClient } from "@/lib/supabase/client";
 import { Button } from "@/components/ui/Button";
 import { Input, Label, FieldError } from "@/components/ui/Input";
 import { AuthCard } from "@/components/ui/AuthCard";
+import { Alert } from "@/components/ui/Alert";
 
 export function RegistroForm() {
   const router = useRouter();
@@ -100,7 +101,7 @@ export function RegistroForm() {
           />
           <FieldError message={errors.password?.message} />
         </div>
-        {formError && <p className="text-sm text-red-400">{formError}</p>}
+        {formError && <Alert variant="error">{formError}</Alert>}
         <Button type="submit" isLoading={isSubmitting} className="w-full">
           Crear cuenta
         </Button>

@@ -1,7 +1,9 @@
 "use client";
 
 import Link from "next/link";
+import { Heart } from "lucide-react";
 import { ProductGrid } from "@/components/product/ProductGrid";
+import { EmptyState } from "@/components/ui/EmptyState";
 import { Button } from "@/components/ui/Button";
 import { useWishlistStore } from "@/lib/wishlist/store";
 import type { ProductWithRelations } from "@/lib/products";
@@ -14,14 +16,16 @@ export function FavoritosGrid({ products }: { products: ProductWithRelations[] }
 
   if (visible.length === 0) {
     return (
-      <div className="py-16 text-center">
-        <p className="text-sm text-gc-blanco/60">
-          Marcá productos con el corazón para encontrarlos acá más rápido.
-        </p>
-        <Link href="/catalogo">
-          <Button className="mt-6">Ver catálogo</Button>
-        </Link>
-      </div>
+      <EmptyState
+        icon={Heart}
+        title="Sin favoritos todavía"
+        description="Marcá productos con el corazón para encontrarlos acá más rápido."
+        action={
+          <Link href="/catalogo">
+            <Button>Ver catálogo</Button>
+          </Link>
+        }
+      />
     );
   }
 

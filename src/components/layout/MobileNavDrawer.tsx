@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import Image from "next/image";
-import { X, ChevronRight, MessageCircle, MapPin, Sparkles } from "lucide-react";
+import { X, ChevronRight, MessageCircle, Sparkles } from "lucide-react";
 
 type MobileNavDrawerProps = {
   isOpen: boolean;

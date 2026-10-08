@@ -1,6 +1,8 @@
 "use client";
 
 import { useMemo, useState } from "react";
+import Link from "next/link";
+import { ShoppingCart } from "lucide-react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import {
@@ -11,6 +13,9 @@ import { useCartStore, cartSubtotal } from "@/lib/cart/store";
 import { formatPrice } from "@/lib/utils/format";
 import { Button } from "@/components/ui/Button";
 import { Input, Label, FieldError } from "@/components/ui/Input";
+import { Alert } from "@/components/ui/Alert";
+import { Skeleton } from "@/components/ui/Skeleton";
+import { EmptyState } from "@/components/ui/EmptyState";
 import { useHydrated } from "@/lib/hooks/useHydrated";
 import type { Database } from "@/types/database.types";
 
@@ -150,17 +155,47 @@ export function CheckoutForm({
     window.location.href = result.initPoint;
   }
 
-  if (!mounted) return null;
+  if (!mounted) {
+    return (
+      <div className="mx-auto grid max-w-4xl gap-10 px-4 py-12 lg:grid-cols-[1.4fr_1fr]">
+        <div className="space-y-8">
+          <div className="space-y-3">
+            <Skeleton className="h-5 w-24" />
+            <Skeleton className="h-16 w-full rounded-md" />
+            <Skeleton className="h-16 w-full rounded-md" />
+          </div>
+          <div className="space-y-3">
+            <Skeleton className="h-5 w-24" />
+            <Skeleton className="h-11 w-full rounded-md" />
+            <Skeleton className="h-11 w-full rounded-md" />
+            <Skeleton className="h-11 w-full rounded-md" />
+          </div>
+        </div>
+        <div className="h-fit rounded-lg border border-gc-carbon bg-gc-carbon/20 p-6">
+          <Skeleton className="mb-4 h-4 w-24" />
+          <div className="space-y-3">
+            <Skeleton className="h-4 w-full" />
+            <Skeleton className="h-4 w-full" />
+            <Skeleton className="h-4 w-3/4" />
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   if (items.length === 0) {
     return (
-      <div className="mx-auto max-w-2xl px-4 py-24 text-center">
-        <h1 className="font-headline text-2xl font-extrabold uppercase tracking-wide">
-          Tu carrito está vacío
-        </h1>
-        <p className="mt-2 text-sm text-gc-blanco/60">
-          Agregá productos al carrito antes de pasar por el checkout.
-        </p>
+      <div className="mx-auto max-w-2xl px-4 py-12">
+        <EmptyState
+          icon={ShoppingCart}
+          title="Tu carrito está vacío"
+          description="Agregá productos al carrito antes de pasar por el checkout."
+          action={
+            <Link href="/catalogo">
+              <Button>Ver catálogo</Button>
+            </Link>
+          }
+        />
       </div>
     );
   }
@@ -303,7 +338,7 @@ export function CheckoutForm({
           </div>
         </section>
 
-        {submitError && <p className="text-sm text-red-400">{submitError}</p>}
+        {submitError && <Alert variant="error">{submitError}</Alert>}
 
         <Button type="submit" isLoading={isSubmitting} className="w-full">
           Pagar con Mercado Pago

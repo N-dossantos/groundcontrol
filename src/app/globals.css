@@ -1,4 +1,5 @@
 @import "tailwindcss";
+@import "tw-animate-css";
 
 @theme {
   /* Ground Control 90 — tokens de marca (brand kit) */
@@ -15,6 +16,19 @@
   --font-headline: var(--font-poppins), sans-serif;
   --font-body: var(--font-lato), sans-serif;
   --font-stat: var(--font-barlow-condensed), sans-serif;
+
+  --animate-fade-in: fade-in 0.2s ease-out;
+
+  @keyframes fade-in {
+    from {
+      opacity: 0;
+      transform: translateY(-4px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
 }
 
 :root {

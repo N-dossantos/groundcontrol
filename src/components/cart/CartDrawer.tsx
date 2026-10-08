@@ -65,12 +65,13 @@ export function CartDrawer() {
             <p className="mt-2 text-xs text-gc-blanco/60">
               Explorá nuestras camisetas, shorts y conjuntos personalizados.
             </p>
-            <button
+            <Link
+              href="/catalogo"
               onClick={closeCart}
               className="mt-6 rounded-full border border-gc-blanco/30 px-6 py-2.5 font-headline text-xs font-bold uppercase tracking-wider text-gc-blanco hover:border-gc-blanco transition-colors"
             >
               Ver Catálogo
-            </button>
+            </Link>
           </div>
         ) : (
           <>
