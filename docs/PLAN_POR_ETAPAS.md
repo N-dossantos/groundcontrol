@@ -59,7 +59,7 @@ Además, un `db dump --schema public` de prod coincide con el local en todo lo d
 
 Objetivo: que un pago aprobado en sandbox quede como `pagado` en la base. Esto bloquea todo lo relacionado con pagos.
 
-- [ ] (Se puede empezar ya, en paralelo) Revisar en `vercel logs` lo que imprime el log de `6ed68b4` para los intentos de `GC90-000015`/`000016`:
+- [ ] Revisar en `vercel logs` lo que imprime el log de diagnóstico. — Los logs de `GC90-000015`/`000016` (agosto) ya no existen: el plan Hobby de Vercel guarda solo 1 hora. Se amplió el log (`liveMode`, `userId`, `bodyDataId` y `secretLength`, sin exponer el valor), así que hace falta una compra de prueba nueva y leer los logs **dentro de la hora**. Qué mirar:
   - largo de `MP_WEBHOOK_SECRET` (nunca el valor),
   - formato del header `x-signature` (`ts=…,v1=…`) y `x-request-id`,
   - de dónde sale el `data.id` que se firma (query string `?data.id=` vs body). Mercado Pago firma el del query string.
