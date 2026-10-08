@@ -42,9 +42,17 @@ export default async function AdminProductosPage({
         <h1 className="font-headline text-2xl font-extrabold uppercase tracking-wide">
           Productos
         </h1>
-        <Link href="/admin/productos/nuevo">
-          <Button>+ Nuevo producto</Button>
-        </Link>
+        <div className="flex gap-3">
+          <a
+            href="/api/admin/productos/export"
+            className="rounded-md border border-gc-blanco/15 px-4 py-2 text-sm font-bold uppercase hover:border-gc-blanco"
+          >
+            Exportar CSV
+          </a>
+          <Link href="/admin/productos/nuevo">
+            <Button>+ Nuevo producto</Button>
+          </Link>
+        </div>
       </div>
 
       <div className="overflow-x-auto rounded-lg border border-gc-carbon">

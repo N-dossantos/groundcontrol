@@ -27,7 +27,7 @@ export async function sendOrderStatusChangeEmail(order: Order, nuevoEstado: stri
   await sendEmail({ to: destinatario, ...email });
 }
 
-async function getUserEmail(userId: string | null) {
+export async function getUserEmail(userId: string | null) {
   if (!userId) return null;
   const admin = createAdminClient();
   const { data } = await admin.auth.admin.getUserById(userId);

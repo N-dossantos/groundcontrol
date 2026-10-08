@@ -1,9 +1,11 @@
 "use client";
 
+import { useEffect } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { Trash2 } from "lucide-react";
 import { useCartStore, cartSubtotal } from "@/lib/cart/store";
+import { recoverCartFromServer } from "@/lib/cart/recoverFromServer";
 import { formatPrice } from "@/lib/utils/format";
 import { Button } from "@/components/ui/Button";
 import { useHydrated } from "@/lib/hooks/useHydrated";
@@ -19,6 +21,15 @@ export function CartView() {
   const updateCantidad = useCartStore((state) => state.updateCantidad);
   const removeItem = useCartStore((state) => state.removeItem);
   const mounted = useHydrated();
+
+  useEffect(() => {
+    if (!mounted || items.length > 0) return;
+    if (new URLSearchParams(window.location.search).get("recuperar") !== "1") return;
+
+    recoverCartFromServer().then((recovered) => {
+      if (recovered) useCartStore.setState({ items: recovered });
+    });
+  }, [mounted, items.length]);
 
   if (!mounted) return null;
 

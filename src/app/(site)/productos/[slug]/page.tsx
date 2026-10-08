@@ -6,6 +6,7 @@ import {
   getProductReviews,
   getRelatedProducts,
   averageRating,
+  totalStock,
 } from "@/lib/products";
 import { ProductGallery } from "@/components/product/ProductGallery";
 import { AddToCartForm } from "@/components/product/AddToCartForm";
@@ -62,9 +63,43 @@ export default async function ProductoPage({
     getRelatedProducts(product),
   ]);
   const rating = averageRating(product);
+  const siteUrl = process.env.NEXT_PUBLIC_SITE_URL ?? "http://localhost:3000";
+
+  const jsonLd = {
+    "@context": "https://schema.org",
+    "@type": "Product",
+    name: product.nombre,
+    description: product.descripcion ?? undefined,
+    image: product.product_images.map((img) => img.url),
+    url: `${siteUrl}/productos/${product.slug}`,
+    brand: { "@type": "Brand", name: product.club || "Ground Control 90" },
+    offers: {
+      "@type": "Offer",
+      url: `${siteUrl}/productos/${product.slug}`,
+      priceCurrency: "ARS",
+      price: product.precio.toFixed(2),
+      availability:
+        totalStock(product) > 0
+          ? "https://schema.org/InStock"
+          : "https://schema.org/OutOfStock",
+    },
+    ...(rating
+      ? {
+          aggregateRating: {
+            "@type": "AggregateRating",
+            ratingValue: rating.average.toFixed(1),
+            reviewCount: rating.count,
+          },
+        }
+      : {}),
+  };
 
   return (
     <div className="mx-auto max-w-5xl px-4 py-12">
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
+      />
       <div className="grid gap-10 lg:grid-cols-2">
         <ProductGallery images={product.product_images} alt={product.nombre} />
 

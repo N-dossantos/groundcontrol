@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
 
 export const metadata: Metadata = { title: "Admin · Clientes" };
@@ -27,9 +28,11 @@ export default async function AdminClientesPage() {
           </thead>
           <tbody>
             {(clientes ?? []).map((cliente) => (
-              <tr key={cliente.id} className="border-b border-gc-carbon/50">
+              <tr key={cliente.id} className="border-b border-gc-carbon/50 hover:bg-gc-carbon/20">
                 <td className="px-4 py-3">
-                  {[cliente.nombre, cliente.apellido].filter(Boolean).join(" ") || "—"}
+                  <Link href={`/admin/clientes/${cliente.id}`} className="font-bold hover:underline">
+                    {[cliente.nombre, cliente.apellido].filter(Boolean).join(" ") || "—"}
+                  </Link>
                 </td>
                 <td className="px-4 py-3 text-gc-blanco/70">{cliente.telefono ?? "—"}</td>
                 <td className="px-4 py-3 text-gc-blanco/70">

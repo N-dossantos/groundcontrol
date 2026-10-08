@@ -154,6 +154,35 @@ export type Database = {
           },
         ]
       }
+      carts: {
+        Row: {
+          items: Json
+          reminder_sent_at: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          items?: Json
+          reminder_sent_at?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          items?: Json
+          reminder_sent_at?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "carts_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: true
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       coupons: {
         Row: {
           activo: boolean
