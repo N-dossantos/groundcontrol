@@ -44,6 +44,16 @@ export async function POST(request: Request) {
     body = null;
   }
 
+  // Con `notification_url` en la preferencia, MP manda cada evento también en
+  // el formato IPN viejo (`?id=…&topic=payment|merchant_order`, sin
+  // `data.id`). Esa variante no se puede validar con la firma `x-signature`
+  // (el manifest firmado usa `data.id`), y el mismo evento ya llega en el
+  // formato webhook (`?data.id=…&type=payment`), que sí se valida y procesa.
+  // Se responde 200 para que MP no la siga reintentando.
+  if (!dataId) {
+    return NextResponse.json({ received: true });
+  }
+
   const xSignature = request.headers.get("x-signature");
   const xRequestId = request.headers.get("x-request-id");
 
@@ -134,7 +144,18 @@ export async function POST(request: Request) {
     // reintentos del webhook no la vuelven a mover de estado.
     if (order.estado === "pendiente_pago") {
       if (payment.status === "approved") {
-        await admin.from("orders").update({ estado: "pagado" }).eq("id", order.id);
+        // MP manda cada evento dos veces casi en simultáneo: el filtro por
+        // estado en el propio UPDATE hace la transición atómica, y solo la
+        // notificación que la gana manda el mail y crea el envío.
+        const { data: transicion } = await admin
+          .from("orders")
+          .update({ estado: "pagado" })
+          .eq("id", order.id)
+          .eq("estado", "pendiente_pago")
+          .select("id")
+          .maybeSingle();
+        if (!transicion) return NextResponse.json({ received: true });
+
         await sendOrderConfirmationEmail({ ...order, estado: "pagado" }).catch((err) =>
           console.error("Error enviando email de confirmación", err)
         );
