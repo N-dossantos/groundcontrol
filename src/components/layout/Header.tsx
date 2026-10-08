@@ -1,11 +1,12 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import Link from "next/link";
 import Image from "next/image";
-import { User, Menu } from "lucide-react";
+import { User, Menu, ShieldCheck } from "lucide-react";
 import { CartBadge } from "@/components/cart/CartBadge";
 import { CartDrawer } from "@/components/cart/CartDrawer";
+import { createClient } from "@/lib/supabase/client";
 import { HeaderSearch } from "./HeaderSearch";
 import { MobileNavDrawer } from "./MobileNavDrawer";
 
@@ -21,6 +22,34 @@ const WHATSAPP_NUMERO = process.env.NEXT_PUBLIC_WHATSAPP_NUMBER ?? "549110000000
 
 export function Header() {
   const [isMobileNavOpen, setIsMobileNavOpen] = useState(false);
+  const [isAdmin, setIsAdmin] = useState(false);
+
+  useEffect(() => {
+    const supabase = createClient();
+
+    async function checkAdmin(userId: string | null) {
+      if (!userId) {
+        setIsAdmin(false);
+        return;
+      }
+      const { data } = await supabase
+        .from("profiles")
+        .select("role")
+        .eq("id", userId)
+        .single();
+      setIsAdmin(data?.role === "admin");
+    }
+
+    supabase.auth.getUser().then(({ data }) => checkAdmin(data.user?.id ?? null));
+
+    const {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange((_event, session) => {
+      checkAdmin(session?.user?.id ?? null);
+    });
+
+    return () => subscription.unsubscribe();
+  }, []);
 
   return (
     <>
@@ -69,6 +98,15 @@ export function Header() {
           {/* Acciones de la Cabecera */}
           <div className="flex items-center gap-3.5 sm:gap-4">
             <HeaderSearch />
+            {isAdmin && (
+              <Link
+                href="/admin"
+                aria-label="Panel de administración"
+                className="text-gc-blanco/80 transition-colors hover:text-gc-blanco"
+              >
+                <ShieldCheck size={22} />
+              </Link>
+            )}
             <Link
               href="/cuenta"
               aria-label="Mi cuenta"

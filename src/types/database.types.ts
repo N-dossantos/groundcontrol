@@ -225,6 +225,32 @@ export type Database = {
         }
         Relationships: []
       }
+      order_item_costos: {
+        Row: {
+          costo_unitario: number | null
+          created_at: string
+          order_item_id: string
+        }
+        Insert: {
+          costo_unitario?: number | null
+          created_at?: string
+          order_item_id: string
+        }
+        Update: {
+          costo_unitario?: number | null
+          created_at?: string
+          order_item_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "order_item_costos_order_item_id_fkey"
+            columns: ["order_item_id"]
+            isOneToOne: true
+            referencedRelation: "order_items"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       order_items: {
         Row: {
           cantidad: number
@@ -504,6 +530,44 @@ export type Database = {
             columns: ["user_id"]
             isOneToOne: false
             referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      product_variant_costos: {
+        Row: {
+          cantidad_comprada: number | null
+          costo: number | null
+          estado_produccion: string | null
+          fecha_llegada_estimada: string | null
+          proveedor: string | null
+          updated_at: string
+          variant_id: string
+        }
+        Insert: {
+          cantidad_comprada?: number | null
+          costo?: number | null
+          estado_produccion?: string | null
+          fecha_llegada_estimada?: string | null
+          proveedor?: string | null
+          updated_at?: string
+          variant_id: string
+        }
+        Update: {
+          cantidad_comprada?: number | null
+          costo?: number | null
+          estado_produccion?: string | null
+          fecha_llegada_estimada?: string | null
+          proveedor?: string | null
+          updated_at?: string
+          variant_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "product_variant_costos_variant_id_fkey"
+            columns: ["variant_id"]
+            isOneToOne: true
+            referencedRelation: "product_variants"
             referencedColumns: ["id"]
           },
         ]

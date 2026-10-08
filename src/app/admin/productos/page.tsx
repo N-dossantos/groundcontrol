@@ -49,6 +49,12 @@ export default async function AdminProductosPage({
           >
             Exportar CSV
           </a>
+          <a
+            href="/api/admin/productos/export-variantes"
+            className="rounded-md border border-gc-blanco/15 px-4 py-2 text-sm font-bold uppercase hover:border-gc-blanco"
+          >
+            Exportar CSV (variantes)
+          </a>
           <Link href="/admin/productos/nuevo">
             <Button>+ Nuevo producto</Button>
           </Link>

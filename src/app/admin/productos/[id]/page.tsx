@@ -3,6 +3,7 @@ import { notFound } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { ProductEditForm } from "@/components/admin/ProductEditForm";
 import { VariantsManager } from "@/components/admin/VariantsManager";
+import { VariantCostosManager } from "@/components/admin/VariantCostosManager";
 import { ImagesManager } from "@/components/admin/ImagesManager";
 
 export const metadata: Metadata = { title: "Admin · Editar producto" };
@@ -17,7 +18,9 @@ export default async function EditarProductoPage({
 
   const { data: product } = await supabase
     .from("products")
-    .select("*, product_variants(*), product_images(*)")
+    .select(
+      "*, product_variants(*, costos:product_variant_costos(*)), product_images(*)"
+    )
     .eq("id", id)
     .single();
 
@@ -56,6 +59,13 @@ export default async function EditarProductoPage({
           Talles y stock
         </h2>
         <VariantsManager productId={product.id} variants={product.product_variants} />
+      </section>
+
+      <section>
+        <h2 className="mb-4 font-headline text-sm font-extrabold uppercase tracking-wide text-gc-blanco/60">
+          Costos y producción
+        </h2>
+        <VariantCostosManager variants={product.product_variants} precio={product.precio} />
       </section>
 
       <section>

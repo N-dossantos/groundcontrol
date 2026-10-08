@@ -31,6 +31,14 @@ export function VariantsManager({
     router.refresh();
   }
 
+  async function handleUpdateStockMinimo(id: string, stock_minimo: number) {
+    setSavingId(id);
+    const supabase = createClient();
+    await supabase.from("product_variants").update({ stock_minimo }).eq("id", id);
+    setSavingId(null);
+    router.refresh();
+  }
+
   async function handleDelete(id: string) {
     const supabase = createClient();
     await supabase.from("product_variants").delete().eq("id", id);
@@ -74,6 +82,7 @@ export function VariantsManager({
             <th className="py-2">Talle</th>
             <th className="py-2">SKU</th>
             <th className="py-2">Stock</th>
+            <th className="py-2">Stock mínimo</th>
             <th className="py-2" />
           </tr>
         </thead>
@@ -89,6 +98,18 @@ export function VariantsManager({
                   defaultValue={variant.stock}
                   disabled={savingId === variant.id}
                   onBlur={(e) => handleUpdateStock(variant.id, Number(e.target.value) || 0)}
+                  className="w-20 py-1.5"
+                />
+              </td>
+              <td className="py-2">
+                <Input
+                  type="number"
+                  min={0}
+                  defaultValue={variant.stock_minimo}
+                  disabled={savingId === variant.id}
+                  onBlur={(e) =>
+                    handleUpdateStockMinimo(variant.id, Number(e.target.value) || 0)
+                  }
                   className="w-20 py-1.5"
                 />
               </td>
