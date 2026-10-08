@@ -344,6 +344,7 @@ export type Database = {
           id: string
           moneda: string
           monto: number
+          monto_reembolsado: number
           mp_merchant_order_id: string | null
           mp_payment_id: string | null
           mp_preference_id: string | null
@@ -358,6 +359,7 @@ export type Database = {
           id?: string
           moneda?: string
           monto: number
+          monto_reembolsado?: number
           mp_merchant_order_id?: string | null
           mp_payment_id?: string | null
           mp_preference_id?: string | null
@@ -372,6 +374,7 @@ export type Database = {
           id?: string
           moneda?: string
           monto?: number
+          monto_reembolsado?: number
           mp_merchant_order_id?: string | null
           mp_payment_id?: string | null
           mp_preference_id?: string | null
@@ -547,11 +550,37 @@ export type Database = {
         }
         Relationships: []
       }
+      rate_limits: {
+        Row: {
+          clave: string
+          intentos: number
+          ventana_inicio: string
+        }
+        Insert: {
+          clave: string
+          intentos?: number
+          ventana_inicio?: string
+        }
+        Update: {
+          clave?: string
+          intentos?: number
+          ventana_inicio?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
     }
     Functions: {
+      check_rate_limit: {
+        Args: {
+          p_clave: string
+          p_max_intentos: number
+          p_ventana_segundos: number
+        }
+        Returns: boolean
+      }
       create_order_and_reserve_stock: {
         Args: {
           p_costo_envio: number

@@ -6,6 +6,7 @@ import { getMercadoPagoConfig } from "@/lib/mercadopago/client";
 import { buildPreferenceBody } from "@/lib/mercadopago/preference";
 import { crearPreferenciaSchema } from "@/lib/validations/checkout";
 import { getAppSettings } from "@/lib/settings";
+import { checkRateLimit } from "@/lib/rateLimit";
 
 function mapRpcError(message: string): { code: string; status: number } {
   if (message.includes("carrito_vacio")) return { code: "carrito_vacio", status: 400 };
@@ -16,6 +17,14 @@ function mapRpcError(message: string): { code: string; status: number } {
 }
 
 export async function POST(request: Request) {
+  const permitido = await checkRateLimit(request, "crear_preferencia", {
+    maxIntentos: 10,
+    ventanaSegundos: 60,
+  });
+  if (!permitido) {
+    return NextResponse.json({ error: "demasiados_intentos" }, { status: 429 });
+  }
+
   let body: unknown;
   try {
     body = await request.json();
@@ -84,6 +93,7 @@ export async function POST(request: Request) {
         contactoNombre: contacto.nombre,
         contactoTelefono: contacto.telefono,
         siteUrl,
+        cuotasMaximas: settings.cuotas_maximas,
       }),
     });
 

@@ -23,6 +23,7 @@ export default async function AdminConfiguracionPage() {
             typeof map.punto_encuentro_direccion === "string" ? map.punto_encuentro_direccion : "",
           puntoEncuentroDescripcion:
             typeof map.punto_encuentro_descripcion === "string" ? map.punto_encuentro_descripcion : "",
+          cuotasMaximas: typeof map.cuotas_maximas === "number" ? map.cuotas_maximas : 12,
         }}
       />
     </div>

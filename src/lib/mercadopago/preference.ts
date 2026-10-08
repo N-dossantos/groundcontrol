@@ -11,6 +11,7 @@ export function buildPreferenceBody({
   contactoNombre,
   contactoTelefono,
   siteUrl,
+  cuotasMaximas,
 }: {
   order: Order;
   items: OrderItem[];
@@ -18,6 +19,7 @@ export function buildPreferenceBody({
   contactoNombre: string;
   contactoTelefono: string;
   siteUrl: string;
+  cuotasMaximas: number;
 }): PreferenceRequest {
   const productItems = items.map((item) => ({
     id: item.product_variant_id,
@@ -60,5 +62,6 @@ export function buildPreferenceBody({
     },
     auto_return: "approved",
     statement_descriptor: "GROUNDCONTROL90",
+    payment_methods: { installments: cuotasMaximas },
   };
 }

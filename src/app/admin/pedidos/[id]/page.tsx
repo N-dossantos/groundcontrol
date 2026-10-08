@@ -27,6 +27,16 @@ export default async function AdminPedidoDetallePage({
 
   if (!order) notFound();
 
+  const { data: payment } = await supabase
+    .from("payments")
+    .select("monto, monto_reembolsado")
+    .eq("order_id", order.id)
+    .in("estado", ["aprobado", "reembolsado_parcial"])
+    .order("created_at", { ascending: false })
+    .limit(1)
+    .maybeSingle();
+  const montoMaximoReembolso = payment ? payment.monto - payment.monto_reembolsado : 0;
+
   let contactoNombre = order.guest_email ? "Invitado" : null;
   let contactoTelefono = order.guest_phone;
 
@@ -124,7 +134,11 @@ export default async function AdminPedidoDetallePage({
       </div>
 
       <div>
-        <AdminOrderActions orderId={order.id} estadoActual={order.estado} />
+        <AdminOrderActions
+          orderId={order.id}
+          estadoActual={order.estado}
+          montoMaximoReembolso={montoMaximoReembolso}
+        />
       </div>
     </div>
   );

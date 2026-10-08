@@ -34,6 +34,7 @@ export function SettingsForm({ initial }: { initial: AppSettingsFormInput }) {
       { key: "whatsapp_numero", value: data.whatsappNumero },
       { key: "punto_encuentro_direccion", value: data.puntoEncuentroDireccion },
       { key: "punto_encuentro_descripcion", value: data.puntoEncuentroDescripcion },
+      { key: "cuotas_maximas", value: data.cuotasMaximas },
     ];
 
     const { error: upsertError } = await supabase.from("app_settings").upsert(updates);
@@ -74,6 +75,17 @@ export function SettingsForm({ initial }: { initial: AppSettingsFormInput }) {
       <div>
         <Label htmlFor="puntoEncuentroDescripcion">Descripción del punto de encuentro</Label>
         <Input id="puntoEncuentroDescripcion" {...register("puntoEncuentroDescripcion")} />
+      </div>
+      <div>
+        <Label htmlFor="cuotasMaximas">Cuotas máximas en Mercado Pago</Label>
+        <Input
+          id="cuotasMaximas"
+          type="number"
+          step="1"
+          error={errors.cuotasMaximas?.message}
+          {...register("cuotasMaximas", { valueAsNumber: true })}
+        />
+        <FieldError message={errors.cuotasMaximas?.message} />
       </div>
       {error && <p className="text-sm text-red-400">{error}</p>}
       {guardado && <p className="text-sm text-gc-dorado">► Configuración guardada</p>}

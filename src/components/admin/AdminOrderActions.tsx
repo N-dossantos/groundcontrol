@@ -3,6 +3,8 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/Button";
+import { Input, Label } from "@/components/ui/Input";
+import { formatPrice } from "@/lib/utils/format";
 
 const ESTADOS = [
   "pendiente_pago",
@@ -12,6 +14,7 @@ const ESTADOS = [
   "entregado",
   "cancelado",
   "reembolsado",
+  "reembolsado_parcial",
 ] as const;
 
 const ESTADO_LABEL: Record<string, string> = {
@@ -22,16 +25,19 @@ const ESTADO_LABEL: Record<string, string> = {
   entregado: "Entregado",
   cancelado: "Cancelado",
   reembolsado: "Reembolsado",
+  reembolsado_parcial: "Reembolsado parcialmente",
 };
 
-const REEMBOLSABLE = ["pagado", "en_preparacion", "enviado", "entregado"];
+const REEMBOLSABLE = ["pagado", "en_preparacion", "enviado", "entregado", "reembolsado_parcial"];
 
 export function AdminOrderActions({
   orderId,
   estadoActual,
+  montoMaximoReembolso,
 }: {
   orderId: string;
   estadoActual: string;
+  montoMaximoReembolso: number;
 }) {
   const router = useRouter();
   const [estado, setEstado] = useState(estadoActual);
@@ -40,6 +46,7 @@ export function AdminOrderActions({
   const [mensaje, setMensaje] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [confirmandoReembolso, setConfirmandoReembolso] = useState(false);
+  const [montoReembolso, setMontoReembolso] = useState("");
 
   async function handleActualizarEstado() {
     setGuardando(true);
@@ -67,21 +74,34 @@ export function AdminOrderActions({
     setError(null);
     setMensaje(null);
 
-    const res = await fetch(`/api/admin/pedidos/${orderId}/reembolsar`, { method: "POST" });
+    const amount = montoReembolso.trim() ? Number(montoReembolso) : undefined;
+
+    const res = await fetch(`/api/admin/pedidos/${orderId}/reembolsar`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ amount }),
+    });
     const data = await res.json();
 
     setReembolsando(false);
     if (!res.ok) {
-      setError(
-        data.error === "pago_aprobado_no_encontrado"
-          ? "No encontramos un pago aprobado para este pedido."
-          : "No pudimos procesar el reembolso."
-      );
+      const MENSAJES_ERROR: Record<string, string> = {
+        pago_aprobado_no_encontrado: "No encontramos un pago aprobado para este pedido.",
+        monto_supera_lo_pendiente: "Ese monto supera lo que todavía se puede reembolsar.",
+      };
+      setError(MENSAJES_ERROR[data.error] ?? "No pudimos procesar el reembolso.");
       return;
     }
 
-    setMensaje(data.yaReembolsado ? "Este pedido ya estaba reembolsado." : "Reembolso procesado.");
-    setEstado("reembolsado");
+    setMontoReembolso("");
+    setMensaje(
+      data.yaReembolsado
+        ? "Este pedido ya estaba reembolsado."
+        : data.estado === "reembolsado_parcial"
+          ? "Reembolso parcial procesado."
+          : "Reembolso procesado."
+    );
+    setEstado(data.yaReembolsado ? "reembolsado" : data.estado);
     router.refresh();
   }
 
@@ -116,10 +136,26 @@ export function AdminOrderActions({
 
       {REEMBOLSABLE.includes(estadoActual) &&
         (confirmandoReembolso ? (
-          <div className="space-y-2 rounded-md border border-red-500/40 bg-red-500/10 p-3">
+          <div className="space-y-3 rounded-md border border-red-500/40 bg-red-500/10 p-3">
+            <div>
+              <Label htmlFor="montoReembolso">
+                Monto a reembolsar (dejar vacío para el total pendiente:{" "}
+                {formatPrice(montoMaximoReembolso)})
+              </Label>
+              <Input
+                id="montoReembolso"
+                type="number"
+                step="0.01"
+                min="0"
+                max={montoMaximoReembolso || undefined}
+                placeholder={String(montoMaximoReembolso)}
+                value={montoReembolso}
+                onChange={(e) => setMontoReembolso(e.target.value)}
+              />
+            </div>
             <p className="text-sm text-gc-blanco">
-              ¿Confirmás el reembolso total de este pedido en Mercado Pago? Esta acción no se
-              puede deshacer.
+              ¿Confirmás el reembolso de este pedido en Mercado Pago? Esta acción no se puede
+              deshacer.
             </p>
             <div className="flex gap-2">
               <Button
@@ -130,7 +166,14 @@ export function AdminOrderActions({
               >
                 Sí, reembolsar
               </Button>
-              <Button type="button" variant="ghost" onClick={() => setConfirmandoReembolso(false)}>
+              <Button
+                type="button"
+                variant="ghost"
+                onClick={() => {
+                  setConfirmandoReembolso(false);
+                  setMontoReembolso("");
+                }}
+              >
                 Cancelar
               </Button>
             </div>

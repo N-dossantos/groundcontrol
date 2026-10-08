@@ -12,6 +12,9 @@ import { formatPrice } from "@/lib/utils/format";
 import { Button } from "@/components/ui/Button";
 import { Input, Label, FieldError } from "@/components/ui/Input";
 import { useHydrated } from "@/lib/hooks/useHydrated";
+import type { Database } from "@/types/database.types";
+
+type Address = Database["public"]["Tables"]["addresses"]["Row"];
 
 const ERROR_MESSAGES: Record<string, string> = {
   carrito_vacio: "Tu carrito está vacío.",
@@ -19,15 +22,18 @@ const ERROR_MESSAGES: Record<string, string> = {
   producto_invalido: "Uno de los productos del carrito ya no está disponible.",
   cupon_invalido: "El cupón ingresado no es válido.",
   error_pasarela_pago: "No pudimos conectar con Mercado Pago. Intentá de nuevo en unos minutos.",
+  demasiados_intentos: "Hiciste demasiados intentos. Esperá un minuto y volvé a intentar.",
   error_desconocido: "Algo salió mal. Intentá de nuevo.",
 };
 
 export function CheckoutForm({
   initialContacto,
+  direccionesGuardadas = [],
   costoEnvioDomicilio,
   puntoEncuentroDescripcion,
 }: {
   initialContacto?: { nombre?: string; email?: string; telefono?: string };
+  direccionesGuardadas?: Address[];
   costoEnvioDomicilio: number;
   puntoEncuentroDescripcion: string;
 }) {
@@ -42,21 +48,49 @@ export function CheckoutForm({
     | { status: "invalido"; motivo: string }
     | null
   >(null);
+  const direccionPredeterminada =
+    direccionesGuardadas.find((a) => a.es_predeterminada) ?? direccionesGuardadas[0];
+  const [direccionSeleccionadaId, setDireccionSeleccionadaId] = useState(
+    direccionPredeterminada?.id ?? ""
+  );
 
   const {
     register,
     handleSubmit,
     watch,
+    setValue,
     formState: { errors, isSubmitting },
   } = useForm<CheckoutFormInput>({
     resolver: zodResolver(checkoutFormSchema),
     defaultValues: {
       metodoEntrega: "retiro_punto_encuentro",
       contacto: initialContacto,
+      direccion: direccionPredeterminada
+        ? {
+            calle: direccionPredeterminada.calle,
+            numero: direccionPredeterminada.numero ?? "",
+            pisoDepto: direccionPredeterminada.piso_depto ?? "",
+            ciudad: direccionPredeterminada.ciudad,
+            provincia: direccionPredeterminada.provincia,
+            codigoPostal: direccionPredeterminada.codigo_postal,
+          }
+        : undefined,
     },
   });
 
   const metodoEntrega = watch("metodoEntrega");
+
+  function handleSeleccionarDireccion(id: string) {
+    setDireccionSeleccionadaId(id);
+    const address = direccionesGuardadas.find((a) => a.id === id);
+    if (!address) return;
+    setValue("direccion.calle", address.calle);
+    setValue("direccion.numero", address.numero ?? "");
+    setValue("direccion.pisoDepto", address.piso_depto ?? "");
+    setValue("direccion.ciudad", address.ciudad);
+    setValue("direccion.provincia", address.provincia);
+    setValue("direccion.codigoPostal", address.codigo_postal);
+  }
   const subtotal = useMemo(() => cartSubtotal(items), [items]);
   const costoEnvio = metodoEntrega === "envio_domicilio" ? costoEnvioDomicilio : 0;
   const descuento = cuponEstado?.status === "aplicado" ? cuponEstado.descuento : 0;
@@ -171,6 +205,24 @@ export function CheckoutForm({
 
           {metodoEntrega === "envio_domicilio" && (
             <div className="mt-4 grid grid-cols-2 gap-3">
+              {direccionesGuardadas.length > 0 && (
+                <div className="col-span-2">
+                  <Label htmlFor="direccionGuardada">Dirección guardada</Label>
+                  <select
+                    id="direccionGuardada"
+                    value={direccionSeleccionadaId}
+                    onChange={(e) => handleSeleccionarDireccion(e.target.value)}
+                    className="w-full rounded-md border border-gc-blanco/15 bg-gc-carbon px-3 py-2 text-sm text-gc-blanco"
+                  >
+                    {direccionesGuardadas.map((address) => (
+                      <option key={address.id} value={address.id}>
+                        {address.calle} {address.numero}, {address.ciudad}
+                        {address.es_predeterminada ? " (predeterminada)" : ""}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              )}
               <div className="col-span-2">
                 <Label htmlFor="calle">Calle</Label>
                 <Input id="calle" error={errors.direccion?.calle?.message} {...register("direccion.calle")} />

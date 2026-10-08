@@ -5,6 +5,7 @@ export type AppSettings = {
   whatsapp_numero: string;
   punto_encuentro_direccion: string;
   punto_encuentro_descripcion: string;
+  cuotas_maximas: number;
 };
 
 const DEFAULTS: AppSettings = {
@@ -12,6 +13,7 @@ const DEFAULTS: AppSettings = {
   whatsapp_numero: process.env.NEXT_PUBLIC_WHATSAPP_NUMBER ?? "5491100000000",
   punto_encuentro_direccion: "Canning, Buenos Aires",
   punto_encuentro_descripcion: "Retiro coordinado por WhatsApp en Canning, Buenos Aires",
+  cuotas_maximas: 12,
 };
 
 export async function getAppSettings(): Promise<AppSettings> {
@@ -37,5 +39,7 @@ export async function getAppSettings(): Promise<AppSettings> {
       typeof map.punto_encuentro_descripcion === "string"
         ? map.punto_encuentro_descripcion
         : DEFAULTS.punto_encuentro_descripcion,
+    cuotas_maximas:
+      typeof map.cuotas_maximas === "number" ? map.cuotas_maximas : DEFAULTS.cuotas_maximas,
   };
 }

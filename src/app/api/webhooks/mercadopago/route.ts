@@ -74,13 +74,21 @@ export async function POST(request: Request) {
     const { data: order } = await admin.from("orders").select("*").eq("id", orderId).single();
     if (!order) return NextResponse.json({ received: true });
 
+    // MP no cambia `payment.status` en un reembolso parcial (sigue "approved"),
+    // así que la única señal de un reembolso parcial disparado desde el panel
+    // de MP (no desde nuestro admin) es este campo acumulado.
+    const montoReembolsado = payment.transaction_amount_refunded ?? 0;
+    const montoPagado = payment.transaction_amount ?? order.total;
+    const esReembolsoParcial = payment.status === "approved" && montoReembolsado > 0;
+
     const paymentData = {
       order_id: order.id,
       proveedor: "mercado_pago",
       mp_payment_id: String(payment.id),
       mp_preference_id: order.mp_preference_id,
-      estado: mapMpStatus(payment.status),
-      monto: payment.transaction_amount ?? order.total,
+      estado: esReembolsoParcial ? "reembolsado_parcial" : mapMpStatus(payment.status),
+      monto: montoPagado,
+      monto_reembolsado: montoReembolsado,
       moneda: payment.currency_id ?? "ARS",
       raw_webhook_payload: JSON.parse(JSON.stringify(payment)),
     };
@@ -113,10 +121,15 @@ export async function POST(request: Request) {
           p_nuevo_estado: "cancelado",
         });
       }
-    } else if (payment.status === "refunded" && order.estado !== "reembolsado") {
-      // Reembolso disparado desde el panel de Mercado Pago (no desde nuestro
-      // admin): el webhook es la única señal de esto, hay que reconciliar.
-      await admin.from("orders").update({ estado: "reembolsado" }).eq("id", order.id);
+    } else if (order.estado !== "reembolsado") {
+      // Reembolso (total o parcial) disparado desde el panel de Mercado Pago
+      // (no desde nuestro admin): el webhook es la única señal de esto, hay
+      // que reconciliar.
+      if (payment.status === "refunded") {
+        await admin.from("orders").update({ estado: "reembolsado" }).eq("id", order.id);
+      } else if (esReembolsoParcial && order.estado !== "reembolsado_parcial") {
+        await admin.from("orders").update({ estado: "reembolsado_parcial" }).eq("id", order.id);
+      }
     }
 
     return NextResponse.json({ received: true });
