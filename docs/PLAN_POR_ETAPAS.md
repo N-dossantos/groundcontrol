@@ -13,7 +13,7 @@
 | Catálogo | Seed local | 1 producto: `TEST SANDBOX (borrar)` |
 | Admin | Cuenta de test local | 1 admin (confirmar que es la cuenta real) |
 
-**Regla para todas las etapas:** `git status` limpio antes de cualquier `vercel --prod`. Este proyecto despliega por CLI, no por la integración de GitHub, así que lo que haya en el working tree es lo que se sube.
+**Regla para todas las etapas:** Vercel tiene la integración de GitHub conectada (verificado el 2026-10-08: todos los deploys de producción vienen de `main`), así que **cada push a `main` se despliega solo a producción**. Antes de pushear, todo lo que el código necesite en la base (migraciones, `app_settings`) tiene que estar ya aplicado en prod. Para probar algo sin tocar prod, pusheá a otra rama: eso genera un deploy de preview.
 
 ---
 
@@ -24,7 +24,7 @@ Objetivo: que todo el trabajo local quede versionado y que nada se suba a produc
 - [x] Comentar el `schedule:` de `.github/workflows/carritos-abandonados.yml` (como ya está `liberar-reservas.yml`). Si no, al pushear va a correr cada hora contra una ruta que todavía no existe en prod.
 - [x] Decidir qué hacer con `docs/image.png` (commitear o borrar). — Borrada: era una captura de un resumen de chat, su contenido ya está en el roadmap y en este plan.
 - [x] Commits separados por fase (2: checkout/pagos, 3: búsqueda y merchandising, 4: ops, 5: UX, 6: admin, 7: Andreani, 8: CORS), cada uno con `npm run build` + `npm run lint` limpios. — Cada commit trae su propia migración y sus tipos regenerados; lint con 0 errores en todos (warnings preexistentes). Aparte: un commit para `[auth.external.google]` en `supabase/config.toml` y otro para docs.
-- [ ] `git push origin main`.
+- [x] `git push origin main`.
 
 **Listo cuando:** `git status` vacío y `origin/main` al día.
 
@@ -37,7 +37,7 @@ Objetivo: que la base de prod tenga todo lo que el código nuevo necesita, con u
 - [x] Restaurar `0001_init_schema.sql` a la versión que ya está aplicada en prod (la de `d7091ad`). — Hecho junto con la Etapa 1, para que el historial nunca tenga la versión editada in-place.
 - [x] Mover el delta que se le agregó in-place a migraciones nuevas y renumerar las siguientes. — Quedó una migración por fase, en el orden de los commits: `0002_reembolso_parcial_rate_limit` (Fase 2: `monto_reembolsado`, `reembolsado_parcial` en los CHECK, `rate_limits` + `check_rate_limit`), `0003_busqueda_reviews_wishlist` (Fase 3: `search_vector` + GIN, `product_reviews`, `wishlists`), `0004_carritos_abandonados`, `0005_costos_produccion`, `0006_andreani_envios`.
 - [x] Verificar en local: `npx supabase db reset` aplica toda la cadena sin errores y `gen types` no muestra diferencias. — Los tipos salen idénticos y un `db dump --schema public` es igual al de la versión in-place, salvo la posición de la columna `payments.monto_reembolsado`. Ojo: usar `npx supabase@2.115.0 gen types …`, porque la 2.120 genera otro formato (sin formatear) que reescribe el archivo entero. El `db reset` también conviene correrlo con la 2.115, porque la 2.120 cambia los default privileges de los roles locales.
-- [ ] Alinear el historial de prod:
+- [x] Alinear el historial de prod:
   ```bash
   npx supabase link --project-ref lgntsnelmqrvcqtjdwdj
   npx supabase migration repair --status reverted 20260802234521 20260802234832
@@ -45,9 +45,11 @@ Objetivo: que la base de prod tenga todo lo que el código nuevo necesita, con u
   npx supabase db push --dry-run   # debe listar solo 0002–0006
   npx supabase db push
   ```
-- [ ] Verificar los grants en prod: `information_schema.routine_privileges` → solo `service_role` tiene `EXECUTE` sobre `create_order_and_reserve_stock`, `release_order_reservation`, `validate_coupon`, `next_order_number` y `check_rate_limit`. Ojo: Supabase Cloud le da `EXECUTE` directamente a `anon`/`authenticated`, así que hace falta `revoke ... from public, anon, authenticated`.
-- [ ] Correr el security advisor de Supabase sobre las tablas nuevas.
-- [ ] Commit.
+- [x] Verificar los grants en prod: `information_schema.routine_privileges` → solo `service_role` tiene `EXECUTE` sobre `create_order_and_reserve_stock`, `release_order_reservation`, `validate_coupon`, `next_order_number` y `check_rate_limit`. Ojo: Supabase Cloud le da `EXECUTE` directamente a `anon`/`authenticated`, así que hace falta `revoke ... from public, anon, authenticated`. — Confirmado con `has_function_privilege`: `anon`/`authenticated` en `false` para las cinco.
+- [x] Correr el security advisor de Supabase sobre las tablas nuevas. — Lo único nuevo es un INFO por `rate_limits` sin policies, que es intencional (solo se accede vía `check_rate_limit`). Quedan warnings que ya estaban antes y van a la Etapa 8: `handle_new_user`/`is_admin`/`rls_auto_enable` ejecutables por `anon`/`authenticated` (`is_admin` lo necesita para RLS; `rls_auto_enable` es de Supabase) y la protección contra contraseñas filtradas desactivada en Auth.
+- [x] Commit.
+
+Además, un `db dump --schema public` de prod coincide con el local en todo lo de `0002`–`0006`. Las únicas diferencias son de la plataforma (`rls_auto_enable` y los grants por defecto de Supabase Cloud).
 
 **Listo cuando:** `db push --dry-run` no lista nada pendiente y el advisor no marca problemas nuevos.
 
@@ -63,7 +65,7 @@ Objetivo: que un pago aprobado en sandbox quede como `pagado` en la base. Esto b
   - de dónde sale el `data.id` que se firma (query string `?data.id=` vs body). Mercado Pago firma el del query string.
   - que el secret sea el del **modo pruebas** y no el de producción (son distintos en el dashboard).
 - [ ] Corregir según lo que muestren los logs y sacar el log de diagnóstico una vez resuelto.
-- [ ] `vercel --prod` con el working tree limpio.
+- [ ] Desplegar: push a `main` (Vercel despliega solo).
 - [ ] Compra de prueba con cuenta de **test buyer** (no tu cuenta real de MP) y nombre `APRO`.
 - [ ] Confirmar en la base: `orders.estado = 'pagado'` y `payments.mp_payment_id` poblado. Que la redirección haya funcionado no alcanza como prueba.
 
