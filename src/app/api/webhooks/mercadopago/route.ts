@@ -7,6 +7,7 @@ import {
   InvalidWebhookSignatureError,
 } from "@/lib/mercadopago/webhookVerify";
 import { sendOrderConfirmationEmail } from "@/lib/email/orders";
+import { crearEnvioAndreani } from "@/lib/andreani/envios";
 
 function mapMpStatus(status?: string | null): string {
   switch (status) {
@@ -115,6 +116,26 @@ export async function POST(request: Request) {
         await sendOrderConfirmationEmail({ ...order, estado: "pagado" }).catch((err) =>
           console.error("Error enviando email de confirmación", err)
         );
+
+        // Nunca bloquea el critical path: crearEnvioAndreani ya atrapa sus
+        // propios errores y devuelve null (Andreani sin configurar, sandbox
+        // caído, etc.) — un pedido pagado siempre queda `pagado` sin importar
+        // si el envío pudo crearse. `andreani_numero_envio` en null es la
+        // señal de "no creado todavía", recuperable por un reintento del
+        // webhook (MP reintenta automáticamente) o por el escape hatch manual
+        // del admin.
+        if (order.metodo_entrega === "envio_domicilio") {
+          const envio = await crearEnvioAndreani({ ...order, estado: "pagado" });
+          if (envio) {
+            await admin
+              .from("orders")
+              .update({
+                andreani_numero_envio: envio.numeroEnvio,
+                andreani_envio_creado_at: new Date().toISOString(),
+              })
+              .eq("id", order.id);
+          }
+        }
       } else if (payment.status === "rejected" || payment.status === "cancelled") {
         await admin.rpc("release_order_reservation", {
           p_order_id: order.id,

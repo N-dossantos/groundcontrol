@@ -310,6 +310,8 @@ export type Database = {
       }
       orders: {
         Row: {
+          andreani_envio_creado_at: string | null
+          andreani_numero_envio: string | null
           confirmation_token: string
           costo_envio: number
           coupon_id: string | null
@@ -318,6 +320,7 @@ export type Database = {
           direccion_envio: Json | null
           estado: string
           guest_email: string | null
+          guest_nombre: string | null
           guest_phone: string | null
           id: string
           metodo_entrega: string
@@ -332,6 +335,8 @@ export type Database = {
           user_id: string | null
         }
         Insert: {
+          andreani_envio_creado_at?: string | null
+          andreani_numero_envio?: string | null
           confirmation_token?: string
           costo_envio?: number
           coupon_id?: string | null
@@ -340,6 +345,7 @@ export type Database = {
           direccion_envio?: Json | null
           estado?: string
           guest_email?: string | null
+          guest_nombre?: string | null
           guest_phone?: string | null
           id?: string
           metodo_entrega: string
@@ -354,6 +360,8 @@ export type Database = {
           user_id?: string | null
         }
         Update: {
+          andreani_envio_creado_at?: string | null
+          andreani_numero_envio?: string | null
           confirmation_token?: string
           costo_envio?: number
           coupon_id?: string | null
@@ -362,6 +370,7 @@ export type Database = {
           direccion_envio?: Json | null
           estado?: string
           guest_email?: string | null
+          guest_nombre?: string | null
           guest_phone?: string | null
           id?: string
           metodo_entrega?: string
@@ -770,12 +779,15 @@ export type Database = {
           p_coupon_codigo?: string
           p_direccion_envio: Json
           p_guest_email: string
+          p_guest_nombre: string
           p_guest_phone: string
           p_items: Json
           p_metodo_entrega: string
           p_user_id: string
         }
         Returns: {
+          andreani_envio_creado_at: string | null
+          andreani_numero_envio: string | null
           confirmation_token: string
           costo_envio: number
           coupon_id: string | null
@@ -784,6 +796,7 @@ export type Database = {
           direccion_envio: Json | null
           estado: string
           guest_email: string | null
+          guest_nombre: string | null
           guest_phone: string | null
           id: string
           metodo_entrega: string

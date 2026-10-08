@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { ShoppingCart } from "lucide-react";
 import { useForm } from "react-hook-form";
@@ -84,6 +84,50 @@ export function CheckoutForm({
   });
 
   const metodoEntrega = watch("metodoEntrega");
+  const codigoPostal = watch("direccion.codigoPostal");
+
+  const [envioCotizado, setEnvioCotizado] = useState<
+    { costo: number; fuente: "andreani" | "flat" } | null
+  >(null);
+  const [cotizandoEnvio, setCotizandoEnvio] = useState(false);
+
+  // Cotización aproximada (ver Phase 7 del roadmap): se dispara al elegir
+  // envío a domicilio con un código postal cargado (guardado o tipeado),
+  // debounced para no golpear el endpoint en cada tecla. El costo real y
+  // definitivo se recalcula server-side en /api/checkout/crear-preferencia —
+  // esto es solo para mostrar una estimación antes de pagar.
+  useEffect(() => {
+    if (metodoEntrega !== "envio_domicilio" || !codigoPostal || codigoPostal.trim().length < 4) {
+      setEnvioCotizado(null);
+      setCotizandoEnvio(false);
+      return;
+    }
+
+    let cancelado = false;
+    setCotizandoEnvio(true);
+
+    const timeout = setTimeout(async () => {
+      try {
+        const res = await fetch("/api/checkout/cotizar-envio", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ codigoPostal, subtotal: cartSubtotal(items) }),
+        });
+        if (cancelado) return;
+        if (res.ok) {
+          const data = await res.json();
+          setEnvioCotizado({ costo: data.costo, fuente: data.fuente });
+        }
+      } finally {
+        if (!cancelado) setCotizandoEnvio(false);
+      }
+    }, 500);
+
+    return () => {
+      cancelado = true;
+      clearTimeout(timeout);
+    };
+  }, [metodoEntrega, codigoPostal, items]);
 
   function handleSeleccionarDireccion(id: string) {
     setDireccionSeleccionadaId(id);
@@ -97,7 +141,8 @@ export function CheckoutForm({
     setValue("direccion.codigoPostal", address.codigo_postal);
   }
   const subtotal = useMemo(() => cartSubtotal(items), [items]);
-  const costoEnvio = metodoEntrega === "envio_domicilio" ? costoEnvioDomicilio : 0;
+  const costoEnvio =
+    metodoEntrega === "envio_domicilio" ? (envioCotizado?.costo ?? costoEnvioDomicilio) : 0;
   const descuento = cuponEstado?.status === "aplicado" ? cuponEstado.descuento : 0;
   const total = subtotal + costoEnvio - descuento;
 
@@ -232,7 +277,11 @@ export function CheckoutForm({
               <span>
                 <span className="block font-bold">Envío a domicilio</span>
                 <span className="block text-sm text-gc-blanco/60">
-                  {formatPrice(costoEnvioDomicilio)}
+                  {metodoEntrega === "envio_domicilio" && cotizandoEnvio
+                    ? "Calculando costo estimado…"
+                    : metodoEntrega === "envio_domicilio" && envioCotizado?.fuente === "andreani"
+                      ? `${formatPrice(envioCotizado.costo)} (costo estimado de envío)`
+                      : formatPrice(costoEnvioDomicilio)}
                 </span>
               </span>
             </label>
@@ -387,7 +436,12 @@ export function CheckoutForm({
             <span>{formatPrice(subtotal)}</span>
           </div>
           <div className="flex justify-between text-gc-blanco/70">
-            <span>Envío</span>
+            <span>
+              Envío
+              {metodoEntrega === "envio_domicilio" && envioCotizado?.fuente === "andreani" && (
+                <span className="ml-1 text-xs">(estimado)</span>
+              )}
+            </span>
             <span>{costoEnvio > 0 ? formatPrice(costoEnvio) : "Sin costo"}</span>
           </div>
           {descuento > 0 && (

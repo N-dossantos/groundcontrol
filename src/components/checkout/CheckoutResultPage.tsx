@@ -1,7 +1,9 @@
 import Link from "next/link";
 import { getOrderByConfirmationToken } from "@/lib/orders";
 import { getAppSettings } from "@/lib/settings";
+import { consultarTrazabilidad } from "@/lib/andreani/envios";
 import { OrderSummaryCard } from "./OrderSummaryCard";
+import { ShipmentTracking } from "./ShipmentTracking";
 import { WhatsAppButton } from "@/components/layout/WhatsAppButton";
 import { Button } from "@/components/ui/Button";
 
@@ -21,6 +23,10 @@ export async function CheckoutResultPage({
   const order = orderNumber && token ? await getOrderByConfirmationToken(orderNumber, token) : null;
   const settings = await getAppSettings();
   const noEncontrado = !order;
+
+  const eventosTrazabilidad = order?.andreani_numero_envio
+    ? await consultarTrazabilidad(order.andreani_numero_envio)
+    : null;
 
   return (
     <div className="mx-auto max-w-lg px-4 py-16 text-center">
@@ -48,8 +54,11 @@ export async function CheckoutResultPage({
       )}
 
       {order && (
-        <div className="mt-8">
+        <div className="mt-8 space-y-6">
           <OrderSummaryCard order={order} />
+          {order.andreani_numero_envio && eventosTrazabilidad && (
+            <ShipmentTracking numeroEnvio={order.andreani_numero_envio} eventos={eventosTrazabilidad} />
+          )}
         </div>
       )}
 

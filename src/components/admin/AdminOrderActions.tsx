@@ -30,14 +30,20 @@ const ESTADO_LABEL: Record<string, string> = {
 
 const REEMBOLSABLE = ["pagado", "en_preparacion", "enviado", "entregado", "reembolsado_parcial"];
 
+const CREAR_ENVIO_HABILITADO = ["pagado", "en_preparacion", "enviado", "entregado"];
+
 export function AdminOrderActions({
   orderId,
   estadoActual,
   montoMaximoReembolso,
+  metodoEntrega,
+  andreaniNumeroEnvio,
 }: {
   orderId: string;
   estadoActual: string;
   montoMaximoReembolso: number;
+  metodoEntrega: string;
+  andreaniNumeroEnvio: string | null;
 }) {
   const router = useRouter();
   const [estado, setEstado] = useState(estadoActual);
@@ -47,6 +53,8 @@ export function AdminOrderActions({
   const [error, setError] = useState<string | null>(null);
   const [confirmandoReembolso, setConfirmandoReembolso] = useState(false);
   const [montoReembolso, setMontoReembolso] = useState("");
+  const [creandoEnvio, setCreandoEnvio] = useState(false);
+  const [numeroEnvio, setNumeroEnvio] = useState(andreaniNumeroEnvio);
 
   async function handleActualizarEstado() {
     setGuardando(true);
@@ -102,6 +110,29 @@ export function AdminOrderActions({
           : "Reembolso procesado."
     );
     setEstado(data.yaReembolsado ? "reembolsado" : data.estado);
+    router.refresh();
+  }
+
+  async function handleCrearEnvio() {
+    setCreandoEnvio(true);
+    setError(null);
+    setMensaje(null);
+
+    const res = await fetch(`/api/admin/pedidos/${orderId}/crear-envio`, { method: "POST" });
+    const data = await res.json();
+
+    setCreandoEnvio(false);
+    if (!res.ok) {
+      const MENSAJES_ERROR: Record<string, string> = {
+        pedido_no_pagado: "El pedido todavía no está pagado.",
+        error_creando_envio: "No pudimos crear el envío en Andreani. Revisá los logs.",
+      };
+      setError(MENSAJES_ERROR[data.error] ?? "No pudimos crear el envío.");
+      return;
+    }
+
+    setNumeroEnvio(data.numeroEnvio);
+    setMensaje(data.yaCreado ? "Este pedido ya tenía un envío creado." : "Envío creado en Andreani.");
     router.refresh();
   }
 
@@ -183,6 +214,25 @@ export function AdminOrderActions({
             Reembolsar
           </Button>
         ))}
+
+      {metodoEntrega === "envio_domicilio" && (
+        <div className="border-t border-gc-carbon pt-4">
+          <label className="mb-1.5 block text-xs font-bold uppercase tracking-wide text-gc-blanco/70">
+            Envío Andreani
+          </label>
+          {numeroEnvio ? (
+            <p className="text-sm text-gc-blanco/70">
+              Envío creado — n.º <span className="font-stat">{numeroEnvio}</span>
+            </p>
+          ) : CREAR_ENVIO_HABILITADO.includes(estadoActual) ? (
+            <Button type="button" variant="secondary" isLoading={creandoEnvio} onClick={handleCrearEnvio}>
+              Crear envío en Andreani
+            </Button>
+          ) : (
+            <p className="text-sm text-gc-blanco/50">Disponible una vez que el pedido esté pagado.</p>
+          )}
+        </div>
+      )}
 
       {mensaje && <p className="text-sm text-gc-dorado">{mensaje}</p>}
       {error && <p className="text-sm text-red-400">{error}</p>}

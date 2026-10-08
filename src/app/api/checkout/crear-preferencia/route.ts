@@ -7,6 +7,7 @@ import { buildPreferenceBody } from "@/lib/mercadopago/preference";
 import { crearPreferenciaSchema } from "@/lib/validations/checkout";
 import { getAppSettings } from "@/lib/settings";
 import { checkRateLimit } from "@/lib/rateLimit";
+import { cotizarEnvio } from "@/lib/andreani/cotizador";
 
 function mapRpcError(message: string): { code: string; status: number } {
   if (message.includes("carrito_vacio")) return { code: "carrito_vacio", status: 400 };
@@ -48,9 +49,29 @@ export async function POST(request: Request) {
   } = await supabase.auth.getUser();
 
   const settings = await getAppSettings();
-  const costoEnvio = metodoEntrega === "envio_domicilio" ? settings.costo_envio_domicilio : 0;
-
   const admin = createAdminClient();
+
+  let costoEnvio = 0;
+  if (metodoEntrega === "envio_domicilio") {
+    // Cotización real recalculada server-side (nunca se confía en un precio
+    // mandado por el cliente): se aproxima el valor declarado del bulto con
+    // los precios vigentes en `products`, no con lo que mandó el carrito.
+    const variantIds = items.map((item) => item.productVariantId);
+    const { data: variantesConPrecio } = await admin
+      .from("product_variants")
+      .select("id, products(precio)")
+      .in("id", variantIds);
+
+    const cantidadPorVariante = new Map(items.map((item) => [item.productVariantId, item.cantidad]));
+    const subtotalAprox = (variantesConPrecio ?? []).reduce((acc, v) => {
+      const cantidad = cantidadPorVariante.get(v.id) ?? 0;
+      const precio = v.products?.precio ?? 0;
+      return acc + precio * cantidad;
+    }, 0);
+
+    const cotizacion = await cotizarEnvio(direccion!.codigoPostal, subtotalAprox);
+    costoEnvio = cotizacion?.costo ?? settings.costo_envio_domicilio;
+  }
 
   // `supabase gen types` no marca como nullable los parámetros de función que
   // sí aceptan NULL en Postgres — casts puntuales para reflejar la firma real
@@ -59,6 +80,7 @@ export async function POST(request: Request) {
     p_user_id: (user?.id ?? null) as string,
     p_guest_email: (user ? null : contacto.email) as string,
     p_guest_phone: (user ? null : contacto.telefono) as string,
+    p_guest_nombre: (user ? null : contacto.nombre) as string,
     p_metodo_entrega: metodoEntrega,
     p_direccion_envio: (metodoEntrega === "envio_domicilio" ? direccion : null) as never,
     p_costo_envio: costoEnvio,

@@ -138,6 +138,8 @@ export default async function AdminPedidoDetallePage({
           orderId={order.id}
           estadoActual={order.estado}
           montoMaximoReembolso={montoMaximoReembolso}
+          metodoEntrega={order.metodo_entrega}
+          andreaniNumeroEnvio={order.andreani_numero_envio}
         />
       </div>
     </div>
