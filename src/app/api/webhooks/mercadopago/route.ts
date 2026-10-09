@@ -31,14 +31,7 @@ export async function POST(request: Request) {
   const url = new URL(request.url);
   const dataId = url.searchParams.get("data.id");
 
-  let body: {
-    type?: string;
-    action?: string;
-    application_id?: number | string;
-    live_mode?: boolean;
-    user_id?: number | string;
-    data?: { id?: string };
-  } | null = null;
+  let body: { type?: string } | null = null;
   try {
     body = await request.json();
   } catch {
@@ -62,28 +55,7 @@ export async function POST(request: Request) {
     verifyWebhookSignature({ xSignature, xRequestId, dataId });
   } catch (err) {
     if (err instanceof InvalidWebhookSignatureError) {
-      // Diagnóstico de SignatureMismatch (Etapa 3 de docs/PLAN_POR_ETAPAS.md):
-      // live_mode dice si la notificación viene del modo pruebas o productivo
-      // (cada uno tiene su propio secret), user_id qué cuenta vendedora la
-      // generó, y el largo del secret detecta espacios/saltos de línea sin
-      // exponer el valor. Sacar una vez resuelto.
-      console.warn(
-        "Webhook de Mercado Pago con firma inválida",
-        err.reason,
-        JSON.stringify({
-          xSignature,
-          xRequestId,
-          dataId,
-          url: request.url,
-          bodyType: body?.type,
-          bodyAction: body?.action,
-          bodyDataId: body?.data?.id,
-          applicationId: body?.application_id,
-          liveMode: body?.live_mode,
-          userId: body?.user_id,
-          secretLength: process.env.MP_WEBHOOK_SECRET?.trim().length ?? 0,
-        })
-      );
+      console.warn("Webhook de Mercado Pago con firma inválida", err.reason, dataId);
       return NextResponse.json({ error: "firma_invalida" }, { status: 401 });
     }
     throw err;
