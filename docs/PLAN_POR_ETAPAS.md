@@ -91,6 +91,16 @@ Objetivo: validar en vivo cada camino de pago antes de usar dinero real. Verific
 | Vencimiento de reserva | orden impaga > 30 min + disparo manual de `liberar-reservas` | reserva liberada, idempotente |
 | Rate limit | > 10 req/min a `crear-preferencia` | `429` |
 
+Verificaciones en producción (2026-10-09):
+
+- `APRO`: `GC90-000019` y `GC90-000020` quedaron `pagado` con pago `aprobado`. `GC90-000021` y `GC90-000022` también, pero Mercado Pago registró `APRO` como titular aunque se intentaban probar otros escenarios.
+- `OTHE`: `GC90-000023` quedó `cancelado`, con pago `rechazado` e ID de pago registrado. La liberación de reserva se ejecutó; no se midió el stock inmediatamente antes del rechazo. No se aplicó cupón, así que su restitución sigue sin probarse. El comprador confirmó el retorno a `/checkout/error`.
+- `CONT`: `GC90-000024` quedó `pendiente_pago`, con pago `en_proceso` e ID de pago registrado. El comprador confirmó el retorno a `/checkout/pendiente`.
+- Vencimiento: el cron respondió `200` y liberó las siete reservas vencidas `GC90-000012`…`000018`; las siete órdenes quedaron `cancelado`. Corresponden a siete unidades de una variante cuyo stock actual es 12. La repetición para comprobar idempotencia en producción quedó pendiente, para no arriesgar el pedido `CONT` activo.
+- Rate limit: diez solicitudes con JSON inválido a `crear-preferencia` respondieron `400`; la undécima respondió `429`. No se crearon pedidos.
+- Cupón: `GC90-000026` quedó `cancelado` con pago `rechazado`, total `$90` y descuento `$10`. El cupón `GC90ETAPA4OTHE` volvió a `usos_actuales = 0` y quedó desactivado después de la prueba. Mercado Pago mostró `$100` como subtotal del producto.
+- Reembolsos: `GC90-000021` se marcó manualmente `reembolsado` desde el selector de estado, pero el pago seguía `aprobado` y con `$0` reembolsados; Mercado Pago también lo mostraba aprobado. Se corrigió el pedido a `pagado` con entrada en `audit_logs`. `GC90-000022` no cambió porque el selector ofrecía `reembolsado_parcial` aunque el endpoint de estado no admitía ese valor. El código ahora reserva los estados de reembolso para la acción Reembolsar. Falta probar reembolsos reales desde el admin y el panel de Mercado Pago.
+
 - [ ] Limpiar las órdenes de prueba `GC90-000001`…`000016` (opcional, no bloquea).
 
 **Listo cuando:** todas las filas están verificadas en la base.

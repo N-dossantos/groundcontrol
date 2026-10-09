@@ -5,16 +5,10 @@ import { createAdminClient } from "@/lib/supabase/admin";
 import { sendOrderStatusChangeEmail } from "@/lib/email/orders";
 
 const schema = z.object({
-  estado: z.enum([
-    "pendiente_pago",
-    "pagado",
-    "en_preparacion",
-    "enviado",
-    "entregado",
-    "cancelado",
-    "reembolsado",
-  ]),
+  estado: z.enum(["en_preparacion", "enviado", "entregado"]),
 });
+
+const estadosGestionables = ["pagado", "en_preparacion", "enviado", "entregado"];
 
 export async function POST(request: Request, context: { params: Promise<{ id: string }> }) {
   const { id: orderId } = await context.params;
@@ -48,11 +42,15 @@ export async function POST(request: Request, context: { params: Promise<{ id: st
     .from("orders")
     .update({ estado: parsed.data.estado })
     .eq("id", orderId)
+    .in("estado", estadosGestionables)
     .select()
-    .single();
+    .maybeSingle();
 
-  if (error || !order) {
+  if (error) {
     return NextResponse.json({ error: "no_pudimos_actualizar" }, { status: 500 });
+  }
+  if (!order) {
+    return NextResponse.json({ error: "estado_no_actualizable" }, { status: 409 });
   }
 
   await sendOrderStatusChangeEmail(order, parsed.data.estado).catch((err) =>

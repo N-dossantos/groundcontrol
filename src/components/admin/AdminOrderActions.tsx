@@ -7,28 +7,19 @@ import { Input, Label } from "@/components/ui/Input";
 import { formatPrice } from "@/lib/utils/format";
 
 const ESTADOS = [
-  "pendiente_pago",
-  "pagado",
   "en_preparacion",
   "enviado",
   "entregado",
-  "cancelado",
-  "reembolsado",
-  "reembolsado_parcial",
 ] as const;
 
 const ESTADO_LABEL: Record<string, string> = {
-  pendiente_pago: "Pendiente de pago",
-  pagado: "Pagado",
   en_preparacion: "En preparación",
   enviado: "Enviado",
   entregado: "Entregado",
-  cancelado: "Cancelado",
-  reembolsado: "Reembolsado",
-  reembolsado_parcial: "Reembolsado parcialmente",
 };
 
 const REEMBOLSABLE = ["pagado", "en_preparacion", "enviado", "entregado", "reembolsado_parcial"];
+const ESTADOS_GESTIONABLES = ["pagado", "en_preparacion", "enviado", "entregado"];
 
 const CREAR_ENVIO_HABILITADO = ["pagado", "en_preparacion", "enviado", "entregado"];
 
@@ -46,7 +37,7 @@ export function AdminOrderActions({
   andreaniNumeroEnvio: string | null;
 }) {
   const router = useRouter();
-  const [estado, setEstado] = useState(estadoActual);
+  const [estado, setEstado] = useState("");
   const [guardando, setGuardando] = useState(false);
   const [reembolsando, setReembolsando] = useState(false);
   const [mensaje, setMensaje] = useState<string | null>(null);
@@ -73,6 +64,7 @@ export function AdminOrderActions({
       return;
     }
     setMensaje("Estado actualizado. Le avisamos al cliente por email.");
+    setEstado("");
     router.refresh();
   }
 
@@ -109,7 +101,7 @@ export function AdminOrderActions({
           ? "Reembolso parcial procesado."
           : "Reembolso procesado."
     );
-    setEstado(data.yaReembolsado ? "reembolsado" : data.estado);
+    setEstado("");
     router.refresh();
   }
 
@@ -138,32 +130,39 @@ export function AdminOrderActions({
 
   return (
     <div className="space-y-4 rounded-lg border border-gc-carbon bg-gc-carbon/20 p-4">
-      <div>
-        <label className="mb-1.5 block text-xs font-bold uppercase tracking-wide text-gc-blanco/70">
-          Estado del pedido
-        </label>
-        <div className="flex gap-2">
-          <select
-            value={estado}
-            onChange={(e) => setEstado(e.target.value)}
-            className="rounded-md border border-gc-blanco/15 bg-gc-carbon px-3 py-2 text-sm text-gc-blanco"
-          >
-            {ESTADOS.map((e) => (
-              <option key={e} value={e}>
-                {ESTADO_LABEL[e]}
-              </option>
-            ))}
-          </select>
-          <Button
-            type="button"
-            variant="secondary"
-            isLoading={guardando}
-            onClick={handleActualizarEstado}
-          >
-            Actualizar
-          </Button>
+      {ESTADOS_GESTIONABLES.includes(estadoActual) && (
+        <div>
+          <label className="mb-1.5 block text-xs font-bold uppercase tracking-wide text-gc-blanco/70">
+            Estado del pedido
+          </label>
+          <div className="flex gap-2">
+            <select
+              value={estado}
+              onChange={(e) => setEstado(e.target.value)}
+              className="rounded-md border border-gc-blanco/15 bg-gc-carbon px-3 py-2 text-sm text-gc-blanco"
+            >
+              <option value="" disabled>Elegí un estado</option>
+              {ESTADOS.map((e) => (
+                <option key={e} value={e}>
+                  {ESTADO_LABEL[e]}
+                </option>
+              ))}
+            </select>
+            <Button
+              type="button"
+              variant="secondary"
+              isLoading={guardando}
+              disabled={!estado || estado === estadoActual}
+              onClick={handleActualizarEstado}
+            >
+              Actualizar
+            </Button>
+          </div>
+          <p className="mt-2 text-xs text-gc-blanco/60">
+            Para devolver un pago, usá el botón Reembolsar.
+          </p>
         </div>
-      </div>
+      )}
 
       {REEMBOLSABLE.includes(estadoActual) &&
         (confirmandoReembolso ? (
