@@ -34,6 +34,7 @@ export async function POST(request: Request) {
   let body: {
     type?: string;
     action?: string;
+    application_id?: number | string;
     live_mode?: boolean;
     user_id?: number | string;
     data?: { id?: string };
@@ -77,6 +78,7 @@ export async function POST(request: Request) {
           bodyType: body?.type,
           bodyAction: body?.action,
           bodyDataId: body?.data?.id,
+          applicationId: body?.application_id,
           liveMode: body?.live_mode,
           userId: body?.user_id,
           secretLength: process.env.MP_WEBHOOK_SECRET?.trim().length ?? 0,
