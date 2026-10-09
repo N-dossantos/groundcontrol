@@ -46,8 +46,37 @@ export function buildPreferenceBody({
         ]
       : [];
 
+  // Mercado Pago cobra la suma de los ítems de la preferencia. Cuando hay un
+  // cupón, los precios originales de order_items ya no representan el total
+  // reservado; agrupamos los productos al importe final con descuento.
+  const productosConDescuento =
+    order.descuento > 0
+      ? order.subtotal > order.descuento
+        ? [{
+            id: order.id,
+            title: `Productos del pedido ${order.order_number}`,
+            description: items.map((item) => `${item.cantidad} × ${item.product_nombre_snapshot}`).join(", ").slice(0, 255),
+            quantity: 1,
+            currency_id: "ARS",
+            unit_price: Math.round((order.subtotal - order.descuento) * 100) / 100,
+          }]
+        : []
+      : productItems;
+
+  if (order.total <= 0 || productosConDescuento.length + envioItem.length === 0) {
+    throw new Error(`El pedido ${order.order_number} no tiene un importe cobrable`);
+  }
+
+  const totalPreferencia = [...productosConDescuento, ...envioItem].reduce(
+    (centavos, item) => centavos + Math.round(item.unit_price * 100) * item.quantity,
+    0
+  );
+  if (totalPreferencia !== Math.round(order.total * 100)) {
+    throw new Error(`El importe del pedido ${order.order_number} no coincide con la preferencia`);
+  }
+
   return {
-    items: [...productItems, ...envioItem],
+    items: [...productosConDescuento, ...envioItem],
     payer: {
       email: contactoEmail,
       name: contactoNombre,
