@@ -59,16 +59,13 @@ Además, un `db dump --schema public` de prod coincide con el local en todo lo d
 
 Objetivo: que un pago aprobado en sandbox quede como `pagado` en la base. Esto bloquea todo lo relacionado con pagos.
 
-- [ ] Revisar en `vercel logs` lo que imprime el log de diagnóstico. — Los logs de `GC90-000015`/`000016` (agosto) ya no existen: el plan Hobby de Vercel guarda solo 1 hora. Se amplió el log (`liveMode`, `userId`, `bodyDataId` y `secretLength`, sin exponer el valor), así que hace falta una compra de prueba nueva y leer los logs **dentro de la hora**. Qué mirar:
-  - largo de `MP_WEBHOOK_SECRET` (nunca el valor),
-  - formato del header `x-signature` (`ts=…,v1=…`) y `x-request-id`,
-  - de dónde sale el `data.id` que se firma (query string `?data.id=` vs body). Mercado Pago firma el del query string.
-  - que el secret sea el del **modo pruebas** y no el de producción (son distintos en el dashboard).
+- [x] Revisar en `vercel logs` lo que imprime el log de diagnóstico. — La compra `GC90-000017` (2026-10-08) confirmó `SignatureMismatch`, `secretLength = 64`, `live_mode: true` y la cuenta vendedora `3583994365`. El `data.id` firmado viene del query string `?data.id=`. Los logs de las compras de agosto ya habían vencido en el plan Hobby de Vercel.
 - [ ] Corregir según lo que muestren los logs y sacar el log de diagnóstico una vez resuelto. — Hallazgos de la compra `GC90-000017` (2026-10-08):
   - **Causa del `SignatureMismatch`:** el secret no coincide con el que firma las notificaciones. `secretLength` es 64, lo normal (no son espacios). Las notificaciones llegan con `live_mode: true` desde la cuenta vendedora `3583994365`, así que hay que usar el secret de **modo productivo** de la app de esa cuenta. **Pendiente:** cargarlo en `MP_WEBHOOK_SECRET` en Vercel y redeployar.
   - **Corregido en código:** el SDK 3.2.1 compara el `ts` de la firma como milisegundos, pero MP lo manda en segundos. Con el secret correcto, todo habría fallado con `TimestampOutOfTolerance`; la tolerancia ahora se chequea aparte, en segundos.
   - **Corregido en código:** las notificaciones IPN (`?id=…&topic=…`, sin `data.id`) se responden 200 y se ignoran, porque no se pueden validar y el mismo evento llega también en formato webhook.
   - **Corregido en código:** MP manda cada evento dos veces casi en simultáneo. El paso a `pagado` ahora es un UPDATE condicionado al estado, así que el mail y el envío de Andreani salen una sola vez.
+  - **Corregido en código (2026-10-09):** el pago consultado en MP siempre usa el `data.id` firmado de la URL. El checkout devuelve error si no puede guardar la preferencia o el pago; el webhook devuelve `500` ante errores de escritura para que MP reintente. `npm run build` y `npm run lint` pasan en local (lint conserva una advertencia previa de React Hook Form). Una firma válida se aceptó y una firma vencida se rechazó en una comprobación local.
 - [ ] Desplegar: push a `main` (Vercel despliega solo).
 - [ ] Compra de prueba con cuenta de **test buyer** (no tu cuenta real de MP) y nombre `APRO`.
 - [ ] Confirmar en la base: `orders.estado = 'pagado'` y `payments.mp_payment_id` poblado. Que la redirección haya funcionado no alcanza como prueba.

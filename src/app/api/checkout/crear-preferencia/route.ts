@@ -119,13 +119,17 @@ export async function POST(request: Request) {
       }),
     });
 
-    await admin.from("orders").update({ mp_preference_id: preference.id }).eq("id", order.id);
+    const { error: orderUpdateError } = await admin
+      .from("orders")
+      .update({ mp_preference_id: preference.id })
+      .eq("id", order.id);
+    if (orderUpdateError) throw orderUpdateError;
 
     // Registra el intento de pago aunque el webhook nunca llegue a confirmarlo
     // (notification_url mal configurada, MP caído, etc.) — sin esto, un pedido
     // pagado pero sin webhook queda sin ningún registro en `payments` y el
     // endpoint de reembolso no tiene con qué reembolsar.
-    await admin.from("payments").insert({
+    const { error: paymentInsertError } = await admin.from("payments").insert({
       order_id: order.id,
       proveedor: "mercado_pago",
       mp_preference_id: preference.id,
@@ -133,6 +137,7 @@ export async function POST(request: Request) {
       monto: order.total,
       moneda: order.moneda,
     });
+    if (paymentInsertError) throw paymentInsertError;
 
     return NextResponse.json({
       initPoint: preference.init_point,

@@ -88,7 +88,9 @@ export async function POST(request: Request) {
   }
 
   const type = body?.type ?? url.searchParams.get("type");
-  const paymentId = body?.data?.id ?? dataId;
+  // La firma cubre el `data.id` de la URL, no el del body. El cuerpo puede
+  // diferir y nunca debe elegir qué pago consultamos en Mercado Pago.
+  const paymentId = dataId;
 
   if (type !== "payment" || !paymentId) {
     // Ignoramos otros tipos de notificación (merchant_order, etc.)
@@ -127,18 +129,16 @@ export async function POST(request: Request) {
     };
 
     // Actualiza el registro `pendiente` creado en el checkout (identificado por
-    // order_id, ya que en ese momento todavía no existe mp_payment_id). Si no
-    // existe — pedidos de antes de este fix — lo crea.
-    const { data: updatedPayment } = await admin
+    // order_id, ya que en ese momento todavía no existe mp_payment_id).
+    const { data: updatedPayment, error: updatePaymentError } = await admin
       .from("payments")
       .update(paymentData)
       .eq("order_id", order.id)
       .select("id")
       .maybeSingle();
+    if (updatePaymentError) throw updatePaymentError;
 
-    if (!updatedPayment) {
-      await admin.from("payments").insert(paymentData);
-    }
+    if (!updatedPayment) throw new Error(`No existe el pago pendiente de la orden ${order.id}`);
 
     // Idempotente: solo transicionamos la orden si sigue pendiente_pago, así
     // reintentos del webhook no la vuelven a mover de estado.
@@ -147,13 +147,14 @@ export async function POST(request: Request) {
         // MP manda cada evento dos veces casi en simultáneo: el filtro por
         // estado en el propio UPDATE hace la transición atómica, y solo la
         // notificación que la gana manda el mail y crea el envío.
-        const { data: transicion } = await admin
+        const { data: transicion, error: transitionError } = await admin
           .from("orders")
           .update({ estado: "pagado" })
           .eq("id", order.id)
           .eq("estado", "pendiente_pago")
           .select("id")
           .maybeSingle();
+        if (transitionError) throw transitionError;
         if (!transicion) return NextResponse.json({ received: true });
 
         await sendOrderConfirmationEmail({ ...order, estado: "pagado" }).catch((err) =>
@@ -180,19 +181,22 @@ export async function POST(request: Request) {
           }
         }
       } else if (payment.status === "rejected" || payment.status === "cancelled") {
-        await admin.rpc("release_order_reservation", {
+        const { error: releaseError } = await admin.rpc("release_order_reservation", {
           p_order_id: order.id,
           p_nuevo_estado: "cancelado",
         });
+        if (releaseError) throw releaseError;
       }
     } else if (order.estado !== "reembolsado") {
       // Reembolso (total o parcial) disparado desde el panel de Mercado Pago
       // (no desde nuestro admin): el webhook es la única señal de esto, hay
       // que reconciliar.
       if (payment.status === "refunded") {
-        await admin.from("orders").update({ estado: "reembolsado" }).eq("id", order.id);
+        const { error } = await admin.from("orders").update({ estado: "reembolsado" }).eq("id", order.id);
+        if (error) throw error;
       } else if (esReembolsoParcial && order.estado !== "reembolsado_parcial") {
-        await admin.from("orders").update({ estado: "reembolsado_parcial" }).eq("id", order.id);
+        const { error } = await admin.from("orders").update({ estado: "reembolsado_parcial" }).eq("id", order.id);
+        if (error) throw error;
       }
     }
 
