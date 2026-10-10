@@ -7,7 +7,7 @@ export function safeAuthRedirect(next: string | null): string {
 
   try {
     const url = new URL(next, BASE_URL);
-    if (url.origin !== BASE_URL) return "/cuenta";
+    if (url.origin !== BASE_URL || url.pathname.startsWith("//")) return "/cuenta";
     return `${url.pathname}${url.search}${url.hash}`;
   } catch {
     return "/cuenta";
