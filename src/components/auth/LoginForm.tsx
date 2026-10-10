@@ -7,6 +7,7 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { loginSchema, type LoginInput } from "@/lib/validations/auth";
 import { createClient } from "@/lib/supabase/client";
+import { safeAuthRedirect } from "@/lib/auth/redirect";
 import { Button } from "@/components/ui/Button";
 import { Input, Label, FieldError } from "@/components/ui/Input";
 import { AuthCard } from "@/components/ui/AuthCard";
@@ -15,8 +16,10 @@ import { Alert } from "@/components/ui/Alert";
 export function LoginForm() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const next = searchParams.get("next") ?? "/cuenta";
-  const [formError, setFormError] = useState<string | null>(null);
+  const next = safeAuthRedirect(searchParams.get("next"));
+  const [formError, setFormError] = useState<string | null>(
+    searchParams.get("error") === "oauth" ? "No pudimos iniciar sesión con Google. Intentá de nuevo." : null
+  );
   const [oauthLoading, setOauthLoading] = useState(false);
 
   const {
@@ -41,13 +44,21 @@ export function LoginForm() {
 
   async function handleGoogle() {
     setOauthLoading(true);
-    const supabase = createClient();
-    await supabase.auth.signInWithOAuth({
-      provider: "google",
-      options: {
-        redirectTo: `${window.location.origin}/auth/callback?next=${encodeURIComponent(next)}`,
-      },
-    });
+    setFormError(null);
+    try {
+      const supabase = createClient();
+      const { error } = await supabase.auth.signInWithOAuth({
+        provider: "google",
+        options: {
+          redirectTo: `${window.location.origin}/auth/callback?next=${encodeURIComponent(next)}`,
+        },
+      });
+      if (error) setFormError("No pudimos iniciar sesión con Google. Intentá de nuevo.");
+    } catch {
+      setFormError("No pudimos iniciar sesión con Google. Intentá de nuevo.");
+    } finally {
+      setOauthLoading(false);
+    }
   }
 
   return (

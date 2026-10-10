@@ -98,7 +98,8 @@ Verificaciones en producción (2026-10-09):
 - `CONT`: `GC90-000024` quedó `pendiente_pago`, con pago `en_proceso` e ID de pago registrado. El comprador confirmó el retorno a `/checkout/pendiente`.
 - Vencimiento: el cron respondió `200` y liberó las siete reservas vencidas `GC90-000012`…`000018`; las siete órdenes quedaron `cancelado`. Corresponden a siete unidades de una variante cuyo stock actual es 12. La repetición para comprobar idempotencia en producción quedó pendiente, para no arriesgar el pedido `CONT` activo.
 - Rate limit: diez solicitudes con JSON inválido a `crear-preferencia` respondieron `400`; la undécima respondió `429`. No se crearon pedidos.
-- Cupón: `GC90-000026` quedó `cancelado` con pago `rechazado`, total `$90` y descuento `$10`. El cupón `GC90ETAPA4OTHE` volvió a `usos_actuales = 0` y quedó desactivado después de la prueba. Se detectó que la preferencia de Mercado Pago sumaba los precios originales de los productos ($100) y omitía el descuento. Se corrigió para que el importe de la preferencia coincida exactamente con `orders.total`; falta probarlo con un nuevo pedido con cupón.
+- Cupón: `GC90-000026` quedó `cancelado` con pago `rechazado`, total `$90` y descuento `$10`. Se detectó que la preferencia de Mercado Pago sumaba los precios originales de los productos ($100) y omitía el descuento. Se corrigió en `a936657`, desplegado en producción. Con el nuevo pedido `GC90-000027`, `orders.total` fue `$90` y el checkout de Mercado Pago mostró `Pagás $90`. No se completó el pago: se liberó la reserva y el pedido quedó `cancelado`, el stock volvió a 12, y `GC90ETAPA4OTHE` quedó inactivo con `usos_actuales = 0`.
+- Cuotas: `cuotas_maximas` no tiene valor guardado en `app_settings`, por lo que rige el predeterminado de 12. En el checkout de Mercado Pago de `GC90-000027`, la Visa de prueba mostró 1, 2, 3, 6, 9 y 12 cuotas; no hubo opciones por encima de 12. No se completó el pago.
 - Reembolsos: `GC90-000021` se marcó manualmente `reembolsado` desde el selector de estado, pero el pago seguía `aprobado` y con `$0` reembolsados; Mercado Pago también lo mostraba aprobado. Se corrigió el pedido a `pagado` con entrada en `audit_logs`. `GC90-000022` no cambió porque el selector ofrecía `reembolsado_parcial` aunque el endpoint de estado no admitía ese valor. El código ahora reserva los estados de reembolso para la acción Reembolsar, desplegado en producción como `9b4910d`. Luego el titular hizo un reembolso total de `$100` desde el panel de Mercado Pago para `GC90-000021`: el panel confirmó la devolución y el webhook dejó `orders`/`payments` en `reembolsado`, `monto_reembolsado = 100`. Falta probar reembolsos reales desde el admin y el parcial desde el panel de Mercado Pago.
 
 - [ ] Limpiar las órdenes de prueba `GC90-000001`…`000016` (opcional, no bloquea).
@@ -115,12 +116,14 @@ Objetivo: que mails, login social y crons funcionen en producción.
 - [ ] **Google OAuth:**
   - Google Cloud Console → OAuth Client ID, con redirect URIs `https://lgntsnelmqrvcqtjdwdj.supabase.co/auth/v1/callback` y `http://127.0.0.1:54321/auth/v1/callback`.
   - Supabase (prod) → Auth → Providers → Google, con Client ID y Secret.
-  - Supabase (prod) → Auth → URL Configuration: Site URL `https://groundcontrol90.vercel.app` y la lista de redirects.
+  - [x] Supabase (prod) → Auth → URL Configuration: Site URL `https://groundcontrol90.vercel.app` y redirects para `/auth/callback?next=**` en producción, `localhost:3000` y `127.0.0.1:3000` (2026-10-10). El código valida que `next` sea una ruta interna y muestra errores de OAuth; la configuración local de Supabase usa los mismos redirects de desarrollo.
   - Probar login y registro con Google en prod.
 - [ ] **Crons (GitHub Actions):**
-  - Cargar los repo secrets `SITE_URL` y `CRON_SECRET` (el mismo valor que en Vercel).
+  - Cargar los repo secrets `SITE_URL` y `CRON_SECRET` (el mismo valor que en Vercel). `SITE_URL` quedó cargado el 2026-10-10; falta `CRON_SECRET`.
   - Descomentar `schedule:` en `liberar-reservas.yml` y en `carritos-abandonados.yml`.
   - Disparar cada workflow una vez con `workflow_dispatch` y confirmar que responde `200`.
+
+Estado al 2026-10-10: Vercel tiene `EMAIL_FROM_ADDRESS` y `CRON_SECRET`, pero no `RESEND_API_KEY`; el proveedor Google de Supabase está deshabilitado y GitHub no tiene aún `CRON_SECRET`. El cron de carritos ya no marca un recordatorio como enviado si falta Resend o si la API rechaza el correo. Las pruebas externas de correos, Google y workflows siguen pendientes hasta cargar esas credenciales.
 
 **Listo cuando:** llega el mail de una compra real de sandbox, el login con Google funciona y los dos workflows corren solos.
 

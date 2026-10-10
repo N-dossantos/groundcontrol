@@ -32,11 +32,16 @@ export async function GET(request: Request) {
     const items = carrito.items as unknown as CartItem[];
     if (!Array.isArray(items) || items.length === 0) continue;
 
-    await sendAbandonedCartEmail(carrito.user_id, items);
-    await admin
+    const enviado = await sendAbandonedCartEmail(carrito.user_id, items);
+    if (!enviado) continue;
+
+    const { error: updateError } = await admin
       .from("carts")
       .update({ reminder_sent_at: new Date().toISOString() })
       .eq("user_id", carrito.user_id);
+    if (updateError) {
+      return NextResponse.json({ error: "error_actualizando_carrito" }, { status: 500 });
+    }
     enviados++;
   }
 

@@ -53,11 +53,19 @@ export function RegistroForm() {
 
   async function handleGoogle() {
     setOauthLoading(true);
-    const supabase = createClient();
-    await supabase.auth.signInWithOAuth({
-      provider: "google",
-      options: { redirectTo: `${window.location.origin}/auth/callback?next=/cuenta` },
-    });
+    setFormError(null);
+    try {
+      const supabase = createClient();
+      const { error } = await supabase.auth.signInWithOAuth({
+        provider: "google",
+        options: { redirectTo: `${window.location.origin}/auth/callback?next=/cuenta` },
+      });
+      if (error) setFormError("No pudimos registrarte con Google. Intentá de nuevo.");
+    } catch {
+      setFormError("No pudimos registrarte con Google. Intentá de nuevo.");
+    } finally {
+      setOauthLoading(false);
+    }
   }
 
   if (revisarEmail) {

@@ -5,8 +5,8 @@ import type { CartItem } from "@/lib/cart/store";
 
 export async function sendAbandonedCartEmail(userId: string, items: CartItem[]) {
   const destinatario = await getUserEmail(userId);
-  if (!destinatario) return;
+  if (!destinatario) return false;
 
   const { subject, html } = abandonedCartEmail(items);
-  await sendEmail({ to: destinatario, subject, html });
+  return sendEmail({ to: destinatario, subject, html });
 }
